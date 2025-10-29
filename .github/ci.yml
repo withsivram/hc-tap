@@ -1,3 +1,7 @@
+name: CI
+
+on: push  # Triggers on any push to any branch
+
 jobs:
   validate:
     runs-on: ubuntu-latest
