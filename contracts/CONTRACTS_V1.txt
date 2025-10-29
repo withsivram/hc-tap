@@ -1,0 +1,39 @@
+Healthcare Text Analytics Pipeline — Contracts v1.0.0
+
+WHAT THIS IS
+We will keep files and API responses consistent so all teammates can work in parallel.
+
+NOTE OBJECT (input)
+- note_id (string): unique id, e.g., "note_001"
+- specialty (string): medical specialty
+- text (string): the note content
+- checksum (string): simple fingerprint to avoid duplicates
+
+MAPPING FROM MTSamples CSV
+- CSV.medical_specialty  -> note.specialty
+- CSV.transcription      -> note.text
+- CSV.sample_name        -> (ignored for now)
+
+ENTITY RECORD (output, JSONL; one JSON per line)
+- note_id (string)
+- run_id (string): e.g., "LOCAL" or a timestamp
+- entity_type (string): "PROBLEM" or "MEDICATION"
+- text (string): exact text span from the note
+- norm_text (string): normalized form (e.g., "metformin 500 mg" -> "metformin")
+- begin (int): start character index of the span (0-based)
+- end (int): end index (exclusive) = begin + length(text)
+- score (number 0..1): confidence score
+- section (string): rough area of note if known (e.g., "medications", "assessment")
+
+FOLDERS WE'RE USING LOCALLY
+- fixtures/notes/      -> example input notes (JSON)
+- fixtures/entities/   -> example extracted entities (JSONL)
+
+ENDPOINTS WE’LL BUILD LATER (READ-only)
+- GET /notes/{id}
+- GET /search?type=&q=&limit=&cursor=
+- GET /stats/run/{id}
+
+PRIVACY
+- Use only synthetic or de-identified notes for local work.
+- Do not publish real data to public repos.

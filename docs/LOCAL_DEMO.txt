@@ -1,0 +1,29 @@
+LOCAL DEMO — read me first (no code)
+
+Goal
+See how a note (input) matches its extracted entities (output) using our fixtures.
+
+Files
+- fixtures/notes/note_001.json
+- fixtures/entities/note_001.jsonl
+- fixtures/notes/note_002.json
+- fixtures/entities/note_002.jsonl
+
+What to do (takes ~60 seconds)
+1) Open fixtures/notes/note_001.json
+   - Find "note_id": it should say "note_001".
+   - Read the "text" once.
+
+2) Open fixtures/entities/note_001.jsonl
+   - There are two lines (two entities).
+   - Each line is a complete JSON object.
+   - Check "note_id" matches "note_001".
+   - Check "entity_type" is either PROBLEM or MEDICATION.
+   - Optional: look back at the note text and find the same words as "text" (e.g., "metformin 500 mg").
+
+3) Repeat for note_002 (note + entities).
+
+Quick mental KPIs (manual)
+- Notes processed: 2
+- Entities found: 4 (2 per note)
+- Entity types present: PROBLEM, MEDICATION
