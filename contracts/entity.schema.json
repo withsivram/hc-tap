@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Entity (Problems & Medications)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "note_id",
+    "run_id",
+    "entity_type",
+    "text",
+    "norm_text",
+    "begin",
+    "end",
+    "score",
+    "section"
+  ],
+  "properties": {
+    "note_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "entity_type": { "type": "string", "enum": ["PROBLEM", "MEDICATION"] },
+    "text": { "type": "string", "minLength": 1 },
+    "norm_text": { "type": "string", "minLength": 1 },
+    "begin": { "type": "integer", "minimum": 0 },
+    "end": { "type": "integer", "minimum": 0 },
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "section": { "type": "string" }
+  }
+}
