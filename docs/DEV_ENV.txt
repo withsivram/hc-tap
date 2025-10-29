@@ -1,1 +1,1 @@
-Python version: 3.13  (create your venv with this)
+Python version: 3.12  (create your venv with this)
