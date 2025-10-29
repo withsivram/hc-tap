@@ -17,4 +17,5 @@
 - Tiny schema validator in CI (JSONL lines vs entity schema)  
 - Local “walking skeleton” plan (ETL stub → API stub → dashboard reads files)
 
+- CI protection smoke test
 
