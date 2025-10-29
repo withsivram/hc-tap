@@ -1,6 +1,10 @@
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      USE_STUBS: "1"
+      ENV: "dev"
+      RUN_ID: "LOCAL"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
