@@ -1,0 +1,6 @@
+v1 KPIs:
+- Total notes processed (count)
+- Top 10 Problems (entity frequency)
+- Top 10 Medications (entity frequency)
+- p95 end-to-end latency (ms)
+
