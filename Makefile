@@ -13,3 +13,7 @@ api-stub:
 .PHONY: dash
 dash:
 	streamlit run services/analytics/dashboard.py
+
+.PHONY: extract-local
+extract-local:
+	python services/etl/rule_extract.py
