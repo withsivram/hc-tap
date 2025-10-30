@@ -8,8 +8,11 @@ SRC_ENTITIES_DIR = "fixtures/entities"
 ENRICHED_DIR = "fixtures/enriched/entities/run=LOCAL"
 RUN_MANIFEST_PATH = "fixtures/runs_LOCAL.json"
 
+
 def utc_now_iso():
-    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    # Normalize UTC offset to 'Z' for ISO 8601 compliance
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace("+00:00", "Z")
+
 
 def main():
     os.makedirs(ENRICHED_DIR, exist_ok=True)
