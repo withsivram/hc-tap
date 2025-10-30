@@ -6,3 +6,6 @@ test:
 etl-stub:
 	python services/etl/etl_stub.py
 
+.PHONY: api-stub
+api-stub:
+	python -m uvicorn services.api.app:app --reload --port 8000
