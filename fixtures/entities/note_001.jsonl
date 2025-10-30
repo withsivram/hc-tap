@@ -1,3 +1,5 @@
 {"note_id":"note_001","run_id":"LOCAL","entity_type":"PROBLEM","text":"chest tightness","norm_text":"chest tightness","begin":16,"end":31,"score":0.95,"section":"assessment"}
 {"note_id":"note_001","run_id":"LOCAL","entity_type":"MEDICATION","text":"metformin 500 mg","norm_text":"metformin","begin":52,"end":68,"score":0.98,"section":"medications"}
 
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "chest tightness", "norm_text": "chest tightness", "begin": 16, "end": 31, "score": 0.9, "section": "medications"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "metformin 500 mg", "norm_text": "metformin", "begin": 52, "end": 68, "score": 0.95, "section": "medications"}
