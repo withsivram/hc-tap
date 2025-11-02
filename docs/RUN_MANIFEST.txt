@@ -15,6 +15,9 @@ Fields
 - duration_ms_p50   (int)      median end-to-end per-note duration (milliseconds)
 - duration_ms_p95   (int)      p95 end-to-end per-note duration (milliseconds)
 - errors            (int)      total failed records in the run
+- f1_exact_micro: number   # micro F1 using exact span match
+- f1_relaxed_micro: number # micro F1 using relaxed (overlap) match
+
 
 Later (AWS location)
 s3://hc-tap-notes-enriched-<env>/runs/{timestamp}.json
