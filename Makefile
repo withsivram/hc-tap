@@ -24,4 +24,7 @@ bootstrap:
 	python -m pip install --upgrade pip
 	pip install -r requirements.txt
 
+.PHONY: help
+help:
+	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean"
 
