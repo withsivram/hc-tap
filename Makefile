@@ -17,3 +17,11 @@ dash:
 .PHONY: extract-local
 extract-local:
 	python services/etl/rule_extract.py
+
+
+.PHONY: bootstrap
+bootstrap:
+	python -m pip install --upgrade pip
+	pip install -r requirements.txt
+
+
