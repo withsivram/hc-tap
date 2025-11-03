@@ -13,7 +13,7 @@ import json, os, math
 from collections import defaultdict, Counter
 
 PRED_PATH = "fixtures/enriched/entities/run=LOCAL/part-000.jsonl"
-GOLD_PATH = "gold/gold_LOCAL.jsonl"
+GOLD_PATH = "fixtures/enriched/entities/run=GOLD/part-000.jsonl"
 MANIFEST_PATH = "fixtures/runs_LOCAL.json"
 TYPES = ("PROBLEM", "MEDICATION")
 

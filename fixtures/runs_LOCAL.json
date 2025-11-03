@@ -1,10 +1,12 @@
 {
   "run_id": "LOCAL",
-  "ts_started": "2025-11-03T00:08:43Z",
-  "ts_finished": "2025-11-03T00:08:43Z",
+  "ts_started": "2025-11-03T06:48:42Z",
+  "ts_finished": "2025-11-03T06:48:42Z",
   "notes_total": 2,
   "entities_total": 4,
   "duration_ms_p50": 0,
-  "duration_ms_p95": 1,
-  "errors": 0
+  "duration_ms_p95": 0,
+  "errors": 0,
+  "f1_exact_micro": 1.0,
+  "f1_relaxed_micro": 1.0
 }
