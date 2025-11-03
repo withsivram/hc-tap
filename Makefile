@@ -24,9 +24,13 @@ bootstrap:
 	python -m pip install --upgrade pip
 	pip install -r requirements.txt
 
+.PHONY: gold-init
+gold-init:
+	python scripts/bootstrap_gold.py
+
 .PHONY: help
 help:
-	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean"
+	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean | gold-init"
 
 .PHONY: eval
 eval:
