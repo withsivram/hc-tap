@@ -1,0 +1,28 @@
+RUN MANIFEST (v0)
+
+Purpose
+A small JSON file that summarizes one processing run. Streamlit/API will read this later.
+
+File (local dev)
+fixtures/runs_LOCAL.json
+
+Fields
+- run_id            (string)  e.g., LOCAL or "2025-10-31T15-20-00Z"
+- ts_started        (ISO 8601) UTC start time
+- ts_finished       (ISO 8601) UTC finish time
+- notes_total       (int)      number of notes processed
+- entities_total    (int)      number of entities written
+- duration_ms_p50   (int)      median end-to-end per-note duration (milliseconds)
+- duration_ms_p95   (int)      p95 end-to-end per-note duration (milliseconds)
+- errors            (int)      total failed records in the run
+- f1_exact_micro: number   # micro F1 using exact span match
+- f1_relaxed_micro: number # micro F1 using relaxed (overlap) match
+
+
+Later (AWS location)
+s3://hc-tap-notes-enriched-<env>/runs/{timestamp}.json
+
+Conventions
+- Use UTC timestamps.
+- p50/p95 are integers in milliseconds.
+- errors must be 0 for a successful run.

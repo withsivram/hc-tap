@@ -1,0 +1,112 @@
+Healthcare Text Analytics Pipeline — Week 1 Role Checklists (no code)
+
+How to use this file
+- Each person completes their section, updating the [Status] line and checking boxes [] → [x].
+- Put any links or file paths you create into your section (e.g., docs/…, fixtures/…).
+- One small PR per person when done.
+
+----------------------------------------------------------------------
+Sivram — Infra/IaC & DevEx Lead
+[Status: not started / in progress / done]
+
+Goal this week: keep repo consistent, agree on names, and ensure CI stays green.
+
+[ ] Confirm these files exist & are accurate:
+    - docs/NAMING_TAGS.txt
+    - docs/S3_LAYOUT.txt
+    - docs/OBSERVABILITY.txt
+    - docs/RUN_MANIFEST.txt
+[ ] Add/confirm:
+    - docs/DEV_ENV.txt → “Python version: <major.minor>” (team standard)
+    - .env.example has: USE_STUBS=1, ENV=dev, RUN_ID=LOCAL
+[ ] CI check runs green on main (GitHub → Actions)
+[ ] Post a short note in docs/RELEASE_NOTES.md (“Week 1: fixtures + contracts + CI in place”)
+
+Evidence to include in PR:
+- Screenshot/snippet of green CI run or link to Actions page.
+- A 3-line RELEASE_NOTES.md entry.
+
+----------------------------------------------------------------------
+Akshay — Ingest/ETL & Extraction
+[Status: not started / in progress / done]
+
+Goal this week: write the plain-English plan and list the files you will read/write locally.
+
+[ ] Update docs/ETL_PLAN.txt with:
+    - Input files: fixtures/notes/*.json
+    - Output files: fixtures/enriched/entities/run=LOCAL/part-*.jsonl (for now we’ll keep them under fixtures/)
+    - Idempotency plan: reuse note_id and checksum in filenames
+    - Run summary: fixtures/runs_LOCAL.json fields you will populate
+[ ] List 3 edge cases you’ll handle later (e.g., empty text, weird Unicode, giant notes)
+[ ] Add a tiny “dry-run” checklist in the file (how you’ll test on 2 notes)
+
+Evidence to include in PR:
+- docs/ETL_PLAN.txt updated with the above bullets.
+
+----------------------------------------------------------------------
+Kevin — API & Auth
+[Status: not started / in progress / done]
+
+Goal this week: finalize the three READ endpoints in plain English with examples from fixtures.
+
+[ ] Update docs/API_ENDPOINTS_DRAFT.txt with:
+    - GET /notes/{id}
+      • Returns: note_id, specialty, text_length, entities[]
+      • Example note_id: "note_001"
+    - GET /search?type=&q=&limit=&cursor=
+      • type ∈ {PROBLEM, MEDICATION}, q is substring match on norm_text
+      • Example: type=MEDICATION&q=metformin → returns note_001 hit
+    - GET /stats/run/{id}
+      • Returns fields from fixtures/runs_LOCAL.json
+[ ] Add one minimal example response per endpoint using our fixtures (2–6 lines each)
+
+Evidence to include in PR:
+- docs/API_ENDPOINTS_DRAFT.txt updated with parameters + tiny examples.
+
+----------------------------------------------------------------------
+Suryodaya — Analytics & Viz
+[Status: not started / in progress / done]
+
+Goal this week: describe the first dashboard screen (what it shows and from which files).
+
+[ ] Update docs/DASHBOARD_KPIS.txt with:
+    - KPIs (v1): total notes processed, top 10 Problems, top 10 Medications
+    - Data sources (for local): fixtures/enriched/entities/run=LOCAL/*.jsonl and fixtures/runs_LOCAL.json
+    - Simple rules: how to count entities (per line = 1); case-insensitive on norm_text
+[ ] Add a 5-line wireframe description:
+    - Top row: totals (notes, entities)
+    - Middle: top 10 Problems
+    - Bottom: top 10 Medications
+[ ] Note one future filter (by run_id)
+
+Evidence to include in PR:
+- docs/DASHBOARD_KPIS.txt updated with data sources + wireframe.
+
+----------------------------------------------------------------------
+Kunal — Eval/QA & PM
+[Status: not started / in progress / done]
+
+Goal this week: tighten labeling rules and outline the mini gold set.
+
+[ ] Update docs/LABELING_GUIDE_DRAFT.txt with:
+    - PROBLEM: symptoms/diagnoses (ex: “hypertension”, “chest tightness”)
+    - MEDICATION: drug name (norm_text) with dose kept in text (ex: “metformin 500 mg” → norm_text “metformin”)
+    - Exclude: section headers, negated mentions (e.g., “no chest pain”), and family history that’s not current problem
+    - Matching: exact span for eval; also track a relaxed overlap (later)
+[ ] Define the pilot gold set plan:
+    - 10 notes (LOCAL), dual-label by 2 people, record disagreements
+    - File path for labels (later): gold/labels.jsonl (not created yet)
+[ ] Add 3 examples to include and 3 to exclude using our fixtures’ wording
+
+Evidence to include in PR:
+- docs/LABELING_GUIDE_DRAFT.txt updated with rules + pilot plan.
+
+----------------------------------------------------------------------
+
+Team rhythm for this file
+- Update your [Status] here when you start/finish.
+- Open a PR titled: “<ROLE>: Week 1 checklist”.
+- Use the PR template (What changed / Evidence / Checklist).
+
+
+

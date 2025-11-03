@@ -27,3 +27,6 @@ Quick mental KPIs (manual)
 - Notes processed: 2
 - Entities found: 4 (2 per note)
 - Entity types present: PROBLEM, MEDICATION
+
+4) Open fixtures/runs_LOCAL.json to see the run summary (notes=2, entities=4).
+
