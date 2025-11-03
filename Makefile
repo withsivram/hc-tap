@@ -28,3 +28,11 @@ bootstrap:
 help:
 	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean"
 
+.PHONY: eval
+eval:
+	python services/eval/evaluate_entities.py
+
+.PHONY: clean
+clean:
+	rm -rf fixtures/entities/*.jsonl
+	rm -rf fixtures/enriched/entities/run=LOCAL
