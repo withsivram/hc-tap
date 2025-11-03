@@ -1,0 +1,19 @@
+S3 LAYOUT (v0)
+
+Raw notes (input)
+s3://hc-tap-notes-raw-<env>/notes/{note_id}.json
+
+Staging (normalized notes from preprocess Lambda)
+s3://hc-tap-notes-enriched-<env>/staging/{note_id}.json
+
+Extracted entities (output, JSONL)
+s3://hc-tap-notes-enriched-<env>/entities/run={run_id}/part-*.jsonl
+
+Run manifests (counts, timings)
+s3://hc-tap-notes-enriched-<env>/runs/{timestamp}.json
+
+Conventions
+- <env> is dev or demo.
+- {note_id} is the same note_id found inside the note JSON.
+- {run_id} is a string we choose per batch (LOCAL for local, timestamp for cloud).
+- JSONL means one JSON object per line (no commas between lines).

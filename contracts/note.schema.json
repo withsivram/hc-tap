@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Note",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["note_id", "specialty", "text", "checksum"],
+  "properties": {
+    "note_id": { "type": "string", "minLength": 1 },
+    "specialty": { "type": "string", "minLength": 1 },
+    "text": { "type": "string", "minLength": 1 },
+    "checksum": { "type": "string", "minLength": 1 }
+  }
+}
