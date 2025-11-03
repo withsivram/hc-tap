@@ -1,0 +1,32 @@
+OBSERVABILITY (v0) — what we will watch
+
+Scope
+- We only observe metrics. No AWS setup yet.
+
+Key metrics (per step)
+- preprocess Lambda:
+  - invocations, errors, duration p50, duration p95
+- extract Lambda:
+  - invocations, errors, duration p50, duration p95, throttles
+- S3:
+  - raw notes: object puts count
+  - enriched entities: object puts count
+
+Run-level fields (we will record these in a run manifest later)
+- run_id (string, e.g., LOCAL or timestamp)
+- notes_total (int)
+- entities_total (int)
+- duration_ms_p50 (int)
+- duration_ms_p95 (int)
+- errors (int)
+
+Alarms (later, when in AWS)
+- CRITICAL: errors > 0 for 5 minutes (either Lambda)
+- WARNING: duration p95 > 1500 ms for 5 minutes (extract Lambda)
+- WARNING: throttles > 0 for 5 minutes (extract Lambda)
+
+Dash layout (later)
+- Top row: p50 / p95 per Lambda, errors
+- Middle: notes processed (run), entities per run
+- Bottom: top 10 Problems, top 10 Medications
+

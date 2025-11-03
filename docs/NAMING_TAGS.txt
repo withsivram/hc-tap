@@ -1,0 +1,34 @@
+PROJECT NAMING & TAGS (v0)
+
+Region (planned): us-east-1
+Environments: dev, demo
+
+Resource names
+- S3 buckets
+  - hc-tap-notes-raw-<env>
+  - hc-tap-notes-enriched-<env>
+- DynamoDB tables
+  - hc-tap-notes
+  - hc-tap-entities
+  - hc-tap-runs
+- Lambda functions
+  - hc-tap-preprocess-<env>
+  - hc-tap-extract-<env>
+- Log groups (AWS default pattern)
+  - /aws/lambda/hc-tap-preprocess-<env>
+  - /aws/lambda/hc-tap-extract-<env>
+- KMS key alias (for S3 encryption)
+  - alias/hc-tap-s3-key
+
+Standard tags (apply to every AWS resource)
+- Project = HC-TAP
+- Env = dev | demo
+- Owner = TeamHC
+- Component = Infra | ETL | API | Analytics | Eval
+- DataClass = Deidentified
+- CostCenter = Student
+- RunId = (used at runtime for tracing; not a static tag)
+
+Notes
+- S3 bucket names must be globally unique and lowercase. Keep “hc-tap-…-<env>”.
+- If a bucket name is taken, append a short suffix, e.g., hc-tap-notes-raw-dev-2025.
