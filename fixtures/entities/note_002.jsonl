@@ -1,4 +1,2 @@
-{"note_id":"note_002","run_id":"LOCAL","entity_type":"PROBLEM","text":"hypertension","norm_text":"hypertension","begin":28,"end":40,"score":0.95,"section":"assessment"}
-{"note_id":"note_002","run_id":"LOCAL","entity_type":"MEDICATION","text":"lisinopril 10 mg","norm_text":"lisinopril","begin":53,"end":69,"score":0.98,"section":"medications"}
 {"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "hypertension", "norm_text": "hypertension", "begin": 28, "end": 40, "score": 0.9, "section": "medications"}
 {"note_id": "note_002", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "lisinopril 10 mg", "norm_text": "lisinopril", "begin": 53, "end": 69, "score": 0.95, "section": "medications"}
