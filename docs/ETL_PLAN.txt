@@ -1,0 +1,7 @@
+Goal: Read fixtures/notes/*.json and write enriched/entities/run=LOCAL/*.jsonl
+Outline:
+- Read each note file.
+- Parse note_id, text.
+- Create entities (stub or real) and write one JSON object per line.
+- Ensure idempotency via checksum-based filenames.
+- Produce a small run manifest with counts.
