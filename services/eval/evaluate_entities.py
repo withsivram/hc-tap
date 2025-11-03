@@ -115,6 +115,23 @@ def persist_micro_f1(exact_micro_f1, relaxed_micro_f1):
     with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
+def dedupe(rows):
+    """Remove duplicate entities based on (note_id, type, norm_text, begin, end)."""
+    seen, out = set(), []
+    for o in rows:
+        key = (
+            o.get("note_id"),
+            o.get("entity_type"),
+            (o.get("norm_text") or "").strip().lower(),
+            o.get("begin"),
+            o.get("end"),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(o)
+    return out
+
 def main():
     preds = load_jsonl(PRED_PATH)
     golds = load_jsonl(GOLD_PATH)
@@ -124,6 +141,16 @@ def main():
     if not preds:
         print(f"[eval] No predictions found at {PRED_PATH}. Run ETL first.")
         return
+
+    # Dedupe predictions and gold before scoring
+    preds = dedupe(preds)
+    golds = dedupe(golds)
+
+    if os.getenv("DEBUG_EVAL") == "1":
+        from collections import Counter
+        print(f"[debug] preds={len(preds)} golds={len(golds)}")
+        print("[debug] pred types:", Counter([p["entity_type"] for p in preds]))
+        print("[debug] gold types:", Counter([g["entity_type"] for g in golds]))
 
     # EXACT
     exact_per, exact_agg = evaluate("EXACT", golds, preds)
