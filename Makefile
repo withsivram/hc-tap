@@ -34,5 +34,6 @@ eval:
 
 .PHONY: clean
 clean:
-	rm -rf fixtures/entities/*.jsonl
+	rm -f fixtures/entities/*.jsonl
 	rm -rf fixtures/enriched/entities/run=LOCAL
+
