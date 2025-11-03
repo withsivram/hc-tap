@@ -174,12 +174,5 @@ def main():
     # Persist MICRO F1s to manifest (no extra console prints)
     persist_micro_f1(exact_agg["microF1"], relax_agg["microF1"])
 
-    # Persist MICRO F1s to manifest (no extra console prints)
-    persist_micro_f1(exact_agg["microF1"], relax_agg["microF1"])
-
-    except Exception as e:
-        print(f"\nWarning: Could not update {MANIFEST_PATH}: {e}")
-        print("Metrics were computed but not persisted.")
-
 if __name__ == "__main__":
     main()
