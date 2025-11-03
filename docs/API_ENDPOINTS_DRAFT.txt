@@ -1,0 +1,7 @@
+GET /notes/{id}
+- Returns note metadata and a list of entities for that note.
+GET /search?type=&q=&limit=&cursor=
+- Returns paginated entities filtered by type and text query.
+GET /stats/run/{id}
+- Returns counts and latency (p50/p95) for a processing run.
+
