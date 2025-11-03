@@ -1,10 +1,10 @@
 {
   "run_id": "LOCAL",
-  "ts_started": "2025-10-30T03:56:20Z",
-  "ts_finished": "2025-10-30T03:56:20Z",
+  "ts_started": "2025-11-03T00:03:37Z",
+  "ts_finished": "2025-11-03T00:03:37Z",
   "notes_total": 2,
   "entities_total": 4,
-  "duration_ms_p50": 0,
+  "duration_ms_p50": 1,
   "duration_ms_p95": 1,
   "errors": 0
 }
