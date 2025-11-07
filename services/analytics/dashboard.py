@@ -18,7 +18,9 @@ if not os.path.exists(RUN_MANIFEST):
 
 if missing:
     st.error("Missing files:\n- " + "\n- ".join(missing))
-    st.info("Tip: run `make etl-stub` first to generate the enriched JSONL and manifest.")
+    st.info(
+        "Tip: run `make etl-stub` first to generate the enriched JSONL and manifest."
+    )
     st.stop()
 
 # Load run manifest
@@ -38,7 +40,9 @@ df = pd.DataFrame(rows)
 # Top KPIs row
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Run ID", manifest.get("run_id", RUN_ID))
-col2.metric("Notes processed", int(manifest.get("notes_total", df["note_id"].nunique())))
+col2.metric(
+    "Notes processed", int(manifest.get("notes_total", df["note_id"].nunique()))
+)
 col3.metric("Entities total", int(manifest.get("entities_total", len(df))))
 col4.metric("Errors", int(manifest.get("errors", 0)))
 
@@ -57,11 +61,15 @@ if type_filter != "ALL":
     work = work[work["entity_type"] == type_filter]
 if q:
     ql = q.lower()
-    work = work[work["norm_text"].str.lower().str.contains(ql) | work["text"].str.lower().str.contains(ql)]
+    work = work[
+        work["norm_text"].str.lower().str.contains(ql)
+        | work["text"].str.lower().str.contains(ql)
+    ]
 
 # Summary table
 with st.expander("Sample entities (first 20)"):
     st.dataframe(work.head(20))
+
 
 # Top Problems / Medications
 def top_counts(frame: pd.DataFrame, etype: str, n: int):
@@ -69,10 +77,14 @@ def top_counts(frame: pd.DataFrame, etype: str, n: int):
     if sub.empty:
         return pd.DataFrame({"norm_text": [], "count": []})
     counts = (
-        sub.groupby("norm_text", dropna=False).size().sort_values(ascending=False).head(n)
+        sub.groupby("norm_text", dropna=False)
+        .size()
+        .sort_values(ascending=False)
+        .head(n)
         .reset_index(name="count")
     )
     return counts
+
 
 left, right = st.columns(2)
 with left:

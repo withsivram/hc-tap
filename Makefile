@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	python scripts/validate_fixtures.py
+	pytest -q
 
 .PHONY: etl-stub
 etl-stub:
@@ -12,7 +12,7 @@ api-stub:
 
 .PHONY: dash
 dash:
-	streamlit run services/analytics/dashboard.py
+	streamlit run services/analytics/streamlit_app.py
 
 .PHONY: extract-local
 extract-local:
