@@ -1,0 +1,5 @@
+{"note_id":"N1","run_id":"LOCAL","entity_type":"PROBLEM","text":"hypertension","norm_text":"Hypertension","begin":5,"end":17,"score":0.95,"section":"Assessment"}
+{"note_id":"N1","run_id":"LOCAL","entity_type":"MEDICATION","text":"metformin","norm_text":"Metformin","begin":32,"end":40,"score":0.91,"section":"Plan"}
+{"note_id":"N2","run_id":"LOCAL","entity_type":"PROBLEM","text":"type 2 diabetes","norm_text":"Type 2 Diabetes","begin":12,"end":26,"score":0.93,"section":"Assessment"}
+{"note_id":"N2","run_id":"LOCAL","entity_type":"MEDICATION","text":"insulin","norm_text":"Insulin","begin":64,"end":70,"score":0.88,"section":"Plan"}
+
