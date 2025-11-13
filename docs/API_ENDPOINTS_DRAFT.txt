@@ -1,7 +1,53 @@
 GET /notes/{id}
-- Returns note metadata and a list of entities for that note.
-GET /search?type=&q=&limit=&cursor=
-- Returns paginated entities filtered by type and text query.
-GET /stats/run/{id}
-- Returns counts and latency (p50/p95) for a processing run.
+Returns note metadata and entities for a single note.
 
+Path:
+  {id} : string (e.g., "note_001")
+
+Response (200):
+{
+  "note_id": "note_001",
+  "medical_specialty": "Endocrinology",
+  "text_length": 1243,
+  "entities": [
+    { "note_id":"note_001","entity_type":"MEDICATION","text":"metformin 500 mg","norm_text":"metformin","start":210,"end":227 },
+    { "note_id":"note_001","entity_type":"PROBLEM","text":"type 2 diabetes","norm_text":"diabetes mellitus type 2","start":55,"end":71 }
+  ]
+}
+
+GET /search?type=&q=&limit=&cursor=
+Returns paginated entities filtered by type and substring match on norm_text.
+
+Query:
+  type    : enum {"PROBLEM","MEDICATION"} (optional; default = all)
+  q       : string (substring on norm_text; case-insensitive)
+  limit   : int (1–200; default=50)
+  cursor  : string (opaque; returned by previous page; optional)
+
+Response (200):
+{
+  "items": [
+    { "note_id":"note_001","entity_type":"MEDICATION","text":"metformin 500 mg","norm_text":"metformin" },
+    { "note_id":"note_014","entity_type":"MEDICATION","text":"metformin","norm_text":"metformin" }
+  ],
+  "next_cursor": "eyJwYWdlIjoyfQ=="   // omit if no more pages
+}
+
+Example:
+  /search?type=MEDICATION&q=metformin&limit=2
+  
+GET /stats/run/{id}
+Returns counts and latency stats for a processing run.
+
+Path:
+  {id} : string (e.g., "LOCAL" or "2025-05-17T03-22-11Z")
+
+Response (200):
+{
+  "run_id": "LOCAL",
+  "notes_total": 2,
+  "entities_total": 4,
+  "duration_ms_p50": 720,
+  "duration_ms_p95": 980,
+  "errors": 0
+}

@@ -5,3 +5,19 @@ Outline:
 - Create entities (stub or real) and write one JSON object per line.
 - Ensure idempotency via checksum-based filenames.
 - Produce a small run manifest with counts.
+
+Entity JSONL schema:
+{
+  "note_id": "note_001",
+  "entity_type": "PROBLEM" | "MEDICATION",
+  "text": "metformin 500 mg",
+  "norm_text": "metformin",
+  "start": 210,
+  "end": 227
+}
+
+Filenames / idempotency:
+- Input:  fixtures/notes/{note_id}.json
+- Output: fixtures/entities/{note_id}.jsonl  (LOCAL demo)
+- Cloud output: enriched/entities/run={run_id}/part-{shard}-{checksum}.jsonl
+  where checksum = sha1("{note_id}:{text}:{start}:{end}") to avoid duplicates.
