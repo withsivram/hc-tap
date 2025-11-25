@@ -1,12 +1,30 @@
 from fastapi import FastAPI, HTTPException, Query
 import json, os
+from services.api.settings import settings
 
-APP_RUN_ID = "LOCAL"
-NOTES_DIR = "fixtures/notes"
-ENRICHED_FILE = f"fixtures/enriched/entities/run={APP_RUN_ID}/part-000.jsonl"
-RUN_MANIFEST = "fixtures/runs_LOCAL.json"
+
+
+APP_RUN_ID = settings.APP_RUN_ID
+NOTES_DIR = settings.NOTES_DIR
+ENRICHED_FILE = f"{settings.ENRICHED_DIR}/run={APP_RUN_ID}/part-000.jsonl"
+RUN_MANIFEST = settings.RUN_MANIFEST
+
 
 app = FastAPI(title="HC-TAP API (Stub)", version="1.0.0")
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.get("/config")
+def config():
+    return {
+        "RUN_ID": APP_RUN_ID,
+        "NOTES_DIR": NOTES_DIR,
+        "ENRICHED_FILE": ENRICHED_FILE,
+        "RUN_MANIFEST": RUN_MANIFEST,
+    }
+
 
 def load_notes():
     notes = {}
