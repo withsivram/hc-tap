@@ -3,3 +3,7 @@ fastapi==0.115.0
 uvicorn==0.30.0
 pandas==2.2.2
 streamlit==1.38.0
+pyarrow
+duckdb
+pytest
+python-dotenv

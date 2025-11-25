@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	python scripts/validate_fixtures.py
+	pytest -q
 
 .PHONY: etl-stub
 etl-stub:
@@ -12,7 +12,7 @@ api-stub:
 
 .PHONY: dash
 dash:
-	streamlit run services/analytics/dashboard.py
+	streamlit run services/analytics/streamlit_app.py
 
 .PHONY: extract-local
 extract-local:
@@ -24,9 +24,13 @@ bootstrap:
 	python -m pip install --upgrade pip
 	pip install -r requirements.txt
 
+.PHONY: gold-init
+gold-init:
+	python scripts/bootstrap_gold.py
+
 .PHONY: help
 help:
-	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean"
+	@echo "Targets: bootstrap | extract-local | eval | api-stub | dash | clean | gold-init"
 
 .PHONY: eval
 eval:
