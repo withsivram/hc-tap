@@ -1,11 +1,10 @@
 {
-  "run_id": "20251127-045151",
-  "ts_started": "2025-11-27T04:51:51Z",
-  "ts_finished": "2025-11-27T04:51:51Z",
+  "run_id": "LOCAL",
+  "ts_started": "2025-11-27T05:14:38Z",
+  "ts_finished": "2025-11-27T05:14:38Z",
   "notes_total": 2,
-  "entities_total": 4,
-  "skipped": 0,
+  "entities_total": 8,
   "errors": 0,
   "duration_ms_p50": 0.0,
-  "duration_ms_p95": 1.0
+  "duration_ms_p95": 0.0
 }
