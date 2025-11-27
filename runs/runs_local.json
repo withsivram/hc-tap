@@ -5,5 +5,12 @@
     "p95_ms": 0.0,
     "error_rate": 0.0,
     "processed_notes": 2
+  },
+  {
+    "run_id": "20251127-045151",
+    "p50_ms": 0.0,
+    "p95_ms": 1.0,
+    "error_rate": 0.0,
+    "processed_notes": 2
   }
 ]

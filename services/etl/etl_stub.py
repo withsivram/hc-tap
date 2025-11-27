@@ -1,116 +1,120 @@
 from __future__ import annotations
 
 import json
-import datetime
+import datetime as dt
 from pathlib import Path
 
-# External contract: keep these paths/names stable.
-RUN_ID = Path().resolve().joinpath().name and "LOCAL"
-NOTES_DIR = Path("fixtures/notes")
-SRC_ENTITIES_DIR = Path("fixtures/entities")
-ENRICHED_DIR = Path(f"enriched/entities/run={RUN_ID}")
-RUN_MANIFEST_PATH = Path("runs/runs_local.json")
+RUN_ID = "LOCAL"  # keep this exact in the stub so Kevin/Suryodaya’s local tools work
+
+NOTES_DIR         = Path("fixtures/notes")             # read only to discover note_ids
+SRC_ENTITIES_DIR  = Path("fixtures/entities")          # per-note JSONL input
+API_ENRICHED_PATH = Path(f"fixtures/enriched/entities/run={RUN_ID}/part-000.jsonl")
+ANA_ENRICHED_DIR  = Path(f"enriched/entities/run={RUN_ID}")
+ANA_ENRICHED_PATH = ANA_ENRICHED_DIR / "entities_part1.jsonl"
+
+API_MANIFEST = Path("fixtures/runs_LOCAL.json")  # single object
+RUNS_LIST    = Path("runs/runs_local.json")      # list of records
+RUNS_BY_ID   = Path("runs") / f"run_{RUN_ID}.json"
 
 REQUIRED_KEYS = [
-    "note_id", "run_id", "entity_type", "text", "norm_text",
-    "begin", "end", "score", "section",
+    "note_id","run_id","entity_type","text","norm_text","begin","end","score","section"
 ]
 
+def utc_iso() -> str:
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00","Z")
 
-def iso_utc() -> str:
-    return (
-        datetime.datetime.now(datetime.timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+def iter_note_ids() -> list[str]:
+    ids: list[str] = []
+    for p in sorted(NOTES_DIR.glob("*.json")):
+        with p.open("r", encoding="utf-8") as f:
+            obj = json.load(f)
+        nid = obj.get("note_id")
+        if nid:
+            ids.append(nid)
+    return ids
 
+def write_api_manifest(rec: dict) -> None:
+    API_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    with API_MANIFEST.open("w", encoding="utf-8") as f:
+        json.dump(rec, f, indent=2)
 
-def read_json(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def iter_note_files() -> list[Path]:
-    return sorted(NOTES_DIR.glob("*.json"))
-
-
-def iter_entities_for_note(note_id: str):
-    src = SRC_ENTITIES_DIR / f"{note_id}.jsonl"
-    if not src.exists():
-        return
-    with src.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
-
-
-def normalize_entity(obj: dict, note: dict) -> dict:
-    obj.setdefault("run_id", RUN_ID)
-    obj.setdefault("norm_text", note.get("text", ""))
-    obj.setdefault("section", note.get("section", "unknown"))
-    for key in REQUIRED_KEYS:
-        obj.setdefault(key, None)
-    return obj
-
-
-def write_manifest(processed_notes: int) -> None:
-    record = {
-        "run_id": RUN_ID,
-        "p50_ms": 0.0,
-        "p95_ms": 0.0,
-        "error_rate": 0.0,
-        "processed_notes": processed_notes,
-    }
-
-    RUN_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    manifest: list = []
-
-    if RUN_MANIFEST_PATH.exists():
+def upsert_runs_list(rec: dict) -> None:
+    RUNS_LIST.parent.mkdir(parents=True, exist_ok=True)
+    rows: list[dict] = []
+    if RUNS_LIST.exists():
         try:
-            with RUN_MANIFEST_PATH.open("r", encoding="utf-8") as f:
+            with RUNS_LIST.open("r", encoding="utf-8") as f:
                 existing = json.load(f)
             if isinstance(existing, list):
-                manifest = [r for r in existing if str(r.get("run_id")) != str(RUN_ID)]
+                rows = [r for r in existing if str(r.get("run_id")) != str(rec.get("run_id"))]
         except Exception:
-            # If the file is unreadable, start fresh.
-            manifest = []
-
-    manifest.append(record)
-    with RUN_MANIFEST_PATH.open("w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2)
-
+            rows = []
+    rows.append({
+        "run_id": rec["run_id"],
+        "p50_ms": rec.get("duration_ms_p50", 0.0),
+        "p95_ms": rec.get("duration_ms_p95", 0.0),
+        "error_rate": float(rec.get("errors", 0)) / max(1, int(rec.get("notes_total", 0))),
+        "processed_notes": int(rec.get("notes_total", 0)),
+    })
+    with RUNS_LIST.open("w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2)
 
 def main() -> None:
-    ENRICHED_DIR.mkdir(parents=True, exist_ok=True)
-    out_file = ENRICHED_DIR / "entities_part1.jsonl"
+    ts_started = utc_iso()
 
-    # Start clean; then append.
-    out_file.write_text("", encoding="utf-8")
+    API_ENRICHED_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ANA_ENRICHED_DIR.mkdir(parents=True, exist_ok=True)
 
+    # start clean
+    API_ENRICHED_PATH.write_text("", encoding="utf-8")
+    ANA_ENRICHED_PATH.write_text("", encoding="utf-8")
+
+    note_ids = iter_note_ids()
     notes_seen = 0
-    ents_written = 0
+    entities_written = 0
 
-    with out_file.open("a", encoding="utf-8") as sink:
-        for note_path in iter_note_files():
-            note = read_json(note_path)
-            note_id = note.get("note_id")
-            if not note_id:
-                continue
+    with API_ENRICHED_PATH.open("a", encoding="utf-8") as api_sink, \
+         ANA_ENRICHED_PATH.open("a", encoding="utf-8") as ana_sink:
 
+        for nid in note_ids:
             notes_seen += 1
+            src = SRC_ENTITIES_DIR / f"{nid}.jsonl"
+            if not src.exists():
+                continue
+            with src.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    ent = json.loads(line)
+                    ent.setdefault("run_id", RUN_ID)
+                    for k in REQUIRED_KEYS:
+                        ent.setdefault(k, None)
+                    j = json.dumps(ent, ensure_ascii=False) + "\n"
+                    api_sink.write(j)
+                    ana_sink.write(j)
+                    entities_written += 1
 
-            for ent in iter_entities_for_note(note_id):
-                ent = normalize_entity(ent, note)
-                sink.write(json.dumps(ent, ensure_ascii=False) + "\n")
-                ents_written += 1
+    ts_finished = utc_iso()
+    record = {
+        "run_id": RUN_ID,
+        "ts_started": ts_started,
+        "ts_finished": ts_finished,
+        "notes_total": notes_seen,
+        "entities_total": entities_written,
+        "errors": 0,
+        "duration_ms_p50": 0.0,
+        "duration_ms_p95": 0.0,
+    }
 
-    write_manifest(notes_seen)
+    write_api_manifest(record)
+    upsert_runs_list(record)
+    RUNS_BY_ID.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
-    print(f"[etl_stub] notes={notes_seen} entities={ents_written} → {out_file}")
-    print(f"[etl_stub] manifest → {RUN_MANIFEST_PATH}")
-
+    print(f"[etl_stub] notes={notes_seen} entities={entities_written} → {API_ENRICHED_PATH}")
+    print(f"[etl_stub] mirror → {ANA_ENRICHED_PATH}")
+    print(f"[etl_stub] API manifest  → {API_MANIFEST}")
+    print(f"[etl_stub] Test manifest → {RUNS_LIST}")
 
 if __name__ == "__main__":
     main()
