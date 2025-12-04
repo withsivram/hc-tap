@@ -14,14 +14,19 @@ import json
 import math
 import os
 import random
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List
 
-from services.etl import rule_extract
-from services.etl.preprocess import normalize_entity_text, normalize_text
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.append(str(REPO_ROOT))
+
+from services.etl import rule_extract  # noqa: E402
+from services.etl.preprocess import normalize_entity_text, normalize_text  # noqa: E402
 
 RUN_ID = "LOCAL"
 EXTRACTOR_NAME = "rule"
