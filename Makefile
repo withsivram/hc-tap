@@ -2,7 +2,7 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack
+	curation-pack eval-report
 
 docker-up:
 	docker-compose up --build
@@ -62,6 +62,9 @@ etl-llm:
 eval:
 	python services/eval/evaluate_entities.py
 
+eval-report:
+	python scripts/eval_report.py
+
 judge:
 	python services/eval/judge.py
 
@@ -117,6 +120,7 @@ help:
 	@printf "  %-15s %s\n" "etl-spacy" "Run ETL using the spaCy extractor."
 	@printf "  %-15s %s\n" "etl-llm" "Run ETL using the LLM extractor."
 	@printf "  %-15s %s\n" "eval" "Evaluate LOCAL predictions vs. gold."
+	@printf "  %-15s %s\n" "eval-report" "Top FP-heavy notes using relaxed matching."
 	@printf "  %-15s %s\n" "judge" "Run the LLM judge evaluation script."
 	@printf "  %-15s %s\n" "gold-sync" "Realign gold spans to normalized notes."
 	@printf "  %-15s %s\n" "gold-bootstrap" "Draft gold labels from LOCAL predictions."
