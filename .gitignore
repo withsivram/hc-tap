@@ -7,4 +7,5 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .streamlit/
+gold/gold_DRAFT.jsonl
 data/
