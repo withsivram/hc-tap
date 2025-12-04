@@ -8,7 +8,13 @@ Local rule-based extractor:
 - Updates fixtures/runs_LOCAL.json with p50/p95 and counts
 """
 
-import os, re, json, glob, time, datetime, math
+import datetime
+import glob
+import json
+import math
+import os
+import re
+import time
 
 NOTES_DIR = "fixtures/notes"
 ENTITIES_DIR = "fixtures/entities"
@@ -16,23 +22,20 @@ ENRICHED_DIR = "fixtures/enriched/entities/run=LOCAL"
 RUN_MANIFEST_PATH = "fixtures/runs_LOCAL.json"
 
 # Tiny lexicons (extend as needed)
-PROBLEM_TERMS = [
-    "hypertension",
-    "chest tightness",
-    "diabetes",
-    "asthma"
-]
-MEDICATION_TERMS = [
-    "metformin",
-    "lisinopril",
-    "atorvastatin",
-    "ibuprofen"
-]
+PROBLEM_TERMS = ["hypertension", "chest tightness", "diabetes", "asthma"]
+MEDICATION_TERMS = ["metformin", "lisinopril", "atorvastatin", "ibuprofen"]
 
 DOSAGE_RE = r"(?:\s+\d+\s*(?:mg|mcg|g))?"  # optional dose like " 10 mg"
 
+
 def utc_now_iso():
-    return datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
 
 def quantile_ms(values, q):
     if not values:
@@ -40,7 +43,8 @@ def quantile_ms(values, q):
     xs = sorted(values)
     # nearest-rank method (conservative)
     k = max(1, math.ceil(q * len(xs)))
-    return int(round(xs[k-1] * 1000))
+    return int(round(xs[k - 1] * 1000))
+
 
 def median_ms(values):
     if not values:
@@ -48,8 +52,9 @@ def median_ms(values):
     xs = sorted(values)
     n = len(xs)
     if n % 2 == 1:
-        return int(round(xs[n//2] * 1000))
-    return int(round((xs[n//2 - 1] + xs[n//2]) / 2 * 1000))
+        return int(round(xs[n // 2] * 1000))
+    return int(round((xs[n // 2 - 1] + xs[n // 2]) / 2 * 1000))
+
 
 def find_spans(text, terms, with_dose=False):
     flags = re.IGNORECASE
@@ -61,19 +66,21 @@ def find_spans(text, terms, with_dose=False):
         else:
             pat = rf"\b({re.escape(term)})\b"
         for m in re.finditer(pat, text, flags):
-            span_text = text[m.start():m.end()]
+            span_text = text[m.start() : m.end()]
             norm = m.group(1).lower()
             spans.append((m.start(), m.end(), span_text, norm))
     return spans
 
+
 def guess_section(text, begin):
     # super simple heuristic
-    window = text[max(0, begin-40):begin+40].lower()
+    window = text[max(0, begin - 40) : begin + 40].lower()
     if "started on" in window or "taking " in window:
         return "medications"
     if "assessment" in window or "impression" in window:
         return "assessment"
     return "unknown"
+
 
 def main():
     os.makedirs(ENTITIES_DIR, exist_ok=True)
@@ -157,7 +164,7 @@ def main():
         "entities_total": entities_total,
         "duration_ms_p50": median_ms(per_note_times),
         "duration_ms_p95": quantile_ms(per_note_times, 0.95),
-        "errors": 0
+        "errors": 0,
     }
     with open(RUN_MANIFEST_PATH, "w", encoding="utf-8") as mf:
         json.dump(manifest, mf, indent=2)
@@ -165,6 +172,7 @@ def main():
     print(f"Rule extract OK ✅  notes={notes_seen}  entities={entities_total}")
     print(f"enriched: {enriched_path}")
     print(f"manifest: {RUN_MANIFEST_PATH}")
+
 
 if __name__ == "__main__":
     main()

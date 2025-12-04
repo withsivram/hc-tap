@@ -1,8 +1,10 @@
-{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "chest tightness", "norm_text": "chest tightness", "begin": 16, "end": 31, "score": 0.9, "section": "medications"}
-{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "metformin 500 mg", "norm_text": "metformin", "begin": 52, "end": 68, "score": 0.95, "section": "medications"}
-{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "chest tightness", "norm_text": "chest tightness", "begin": 16, "end": 31, "score": 0.9, "section": "medications"}
-{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "metformin 500 mg", "norm_text": "metformin", "begin": 52, "end": 68, "score": 0.95, "section": "medications"}
-{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "hypertension", "norm_text": "hypertension", "begin": 28, "end": 40, "score": 0.9, "section": "medications"}
-{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "lisinopril 10 mg", "norm_text": "lisinopril", "begin": 53, "end": 69, "score": 0.95, "section": "medications"}
-{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "hypertension", "norm_text": "hypertension", "begin": 28, "end": 40, "score": 0.9, "section": "medications"}
-{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "MEDICATION", "text": "lisinopril 10 mg", "norm_text": "lisinopril", "begin": 53, "end": 69, "score": 0.95, "section": "medications"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "Patient reports", "norm_text": "patient reports", "begin": 0, "end": 15, "score": 0.85, "section": "unknown", "source": "scispacy"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "chest tightness", "norm_text": "chest tightness", "begin": 16, "end": 31, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "exertion", "norm_text": "exertion", "begin": 35, "end": 43, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "daily", "norm_text": "daily", "begin": 69, "end": 74, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_001", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "drug allergies", "norm_text": "drug allergies", "begin": 85, "end": 99, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "Follow-up visit", "norm_text": "follow-up visit", "begin": 0, "end": 15, "score": 0.85, "section": "unknown", "source": "scispacy"}
+{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "History of hypertension", "norm_text": "history of hypertension", "begin": 17, "end": 40, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "lisinopril", "norm_text": "lisinopril", "begin": 53, "end": 63, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "daily", "norm_text": "daily", "begin": 70, "end": 75, "score": 0.85, "section": "medications", "source": "scispacy"}
+{"note_id": "note_002", "run_id": "LOCAL", "entity_type": "PROBLEM", "text": "side effects", "norm_text": "side effects", "begin": 80, "end": 92, "score": 0.85, "section": "medications", "source": "scispacy"}

@@ -1,0 +1,29 @@
+{"note_id": "note_001", "entity_type": "PROBLEM", "text": "chest tightness", "norm_text": "chest tightness", "begin": 16, "end": 31}
+{"note_id": "note_001", "entity_type": "MEDICATION", "text": "metformin 500 mg", "norm_text": "metformin", "begin": 52, "end": 68}
+{"note_id": "note_002", "entity_type": "PROBLEM", "text": "hypertension", "norm_text": "hypertension", "begin": 28, "end": 40}
+{"note_id": "note_002", "entity_type": "MEDICATION", "text": "lisinopril 10 mg", "norm_text": "lisinopril", "begin": 53, "end": 69}
+{"note_id": "note_003", "entity_type": "PROBLEM", "text": "asthma", "norm_text": "asthma", "begin": 10, "end": 16}
+{"note_id": "note_003", "entity_type": "MEDICATION", "text": "albuterol", "norm_text": "albuterol", "begin": 20, "end": 29}
+{"note_id": "note_004", "entity_type": "PROBLEM", "text": "diabetes", "norm_text": "diabetes", "begin": 5, "end": 13}
+{"note_id": "note_004", "entity_type": "MEDICATION", "text": "insulin", "norm_text": "insulin", "begin": 30, "end": 37}
+{"note_id": "note_005", "entity_type": "PROBLEM", "text": "headache", "norm_text": "headache", "begin": 12, "end": 20}
+{"note_id": "note_005", "entity_type": "MEDICATION", "text": "ibuprofen", "norm_text": "ibuprofen", "begin": 40, "end": 49}
+{"note_id": "note_006", "entity_type": "PROBLEM", "text": "back pain", "norm_text": "back pain", "begin": 8, "end": 17}
+{"note_id": "note_006", "entity_type": "MEDICATION", "text": "naproxen", "norm_text": "naproxen", "begin": 35, "end": 43}
+{"note_id": "note_007", "entity_type": "PROBLEM", "text": "cough", "norm_text": "cough", "begin": 15, "end": 20}
+{"note_id": "note_007", "entity_type": "MEDICATION", "text": "robitussin", "norm_text": "robitussin", "begin": 45, "end": 55}
+{"note_id": "note_008", "entity_type": "PROBLEM", "text": "fever", "norm_text": "fever", "begin": 10, "end": 15}
+{"note_id": "note_008", "entity_type": "MEDICATION", "text": "tylenol", "norm_text": "tylenol", "begin": 30, "end": 37}
+{"note_id": "note_009", "entity_type": "PROBLEM", "text": "anxiety", "norm_text": "anxiety", "begin": 5, "end": 12}
+{"note_id": "note_009", "entity_type": "MEDICATION", "text": "lexapro", "norm_text": "lexapro", "begin": 25, "end": 32}
+{"note_id": "note_010", "entity_type": "PROBLEM", "text": "depression", "norm_text": "depression", "begin": 8, "end": 18}
+{"note_id": "note_010", "entity_type": "MEDICATION", "text": "zoloft", "norm_text": "zoloft", "begin": 40, "end": 46}
+{"note_id": "note_011", "entity_type": "PROBLEM", "text": "insomnia", "norm_text": "insomnia", "begin": 12, "end": 20}
+{"note_id": "note_011", "entity_type": "MEDICATION", "text": "ambien", "norm_text": "ambien", "begin": 50, "end": 56}
+{"note_id": "note_012", "entity_type": "PROBLEM", "text": "rash", "norm_text": "rash", "begin": 15, "end": 19}
+{"note_id": "note_012", "entity_type": "MEDICATION", "text": "hydrocortisone", "norm_text": "hydrocortisone", "begin": 35, "end": 49}
+{"note_id": "note_013", "entity_type": "PROBLEM", "text": "nausea", "norm_text": "nausea", "begin": 10, "end": 16}
+{"note_id": "note_013", "entity_type": "MEDICATION", "text": "zofran", "norm_text": "zofran", "begin": 30, "end": 36}
+{"note_id": "note_014", "entity_type": "PROBLEM", "text": "vomiting", "norm_text": "vomiting", "begin": 18, "end": 26}
+{"note_id": "note_014", "entity_type": "MEDICATION", "text": "reglan", "norm_text": "reglan", "begin": 45, "end": 51}
+

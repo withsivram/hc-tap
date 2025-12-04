@@ -1,10 +1,38 @@
-## What changed
-- 
+<!--
+Title Prefix Suggestions:
+  api:    (services/api changes)
+  etl:    (services/etl changes)
+  eval:   (services/eval or gold changes)
+  dash:   (services/analytics changes)
+  docs:   (documentation only)
+  ci:     (github workflows)
+  devex:  (makefile, scripts, templates)
+-->
 
-## Evidence (screenshots/logs)
-- 
+## What changed / Why
+<!-- Describe the change and the problem it solves. Link to issue if applicable. -->
+
+
+## Test plan
+<!-- Exact commands run to verify the change. -->
+```bash
+
+```
+
+## Evidence
+<!-- Screenshots or console logs -->
+
+
+## Impact radius
+- [ ] ETL
+- [ ] API
+- [ ] Eval
+- [ ] Dashboard
+- [ ] Docs
+- [ ] Infra
 
 ## Checklist
-- [ ] Contracts unaffected (or updated with version bump)
-- [ ] Files validate against schema (notes/entities)
-- [ ] Local demo still works (fixtures)
+- [ ] CI green
+- [ ] Audit green
+- [ ] No direct push to main
+- [ ] Updated docs if needed

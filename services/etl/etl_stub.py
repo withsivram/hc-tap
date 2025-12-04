@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Local ETL stub: bundles fixture entity lines into enriched/ JSONL and writes a run manifest."""
 
-import os, glob, json, time, datetime
+import datetime
+import glob
+import json
+import os
 
 NOTES_DIR = "fixtures/notes"
 SRC_ENTITIES_DIR = "fixtures/entities"
@@ -11,7 +14,11 @@ RUN_MANIFEST_PATH = "fixtures/runs_LOCAL.json"
 
 def utc_now_iso():
     # Normalize UTC offset to 'Z' for ISO 8601 compliance
-    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace("+00:00", "Z")
+    return (
+        datetime.datetime.now(datetime.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
 
 
 def main():
@@ -56,7 +63,7 @@ def main():
         "entities_total": entities_written,
         "duration_ms_p50": 0,
         "duration_ms_p95": 0,
-        "errors": 0
+        "errors": 0,
     }
     with open(RUN_MANIFEST_PATH, "w", encoding="utf-8") as mf:
         json.dump(manifest, mf, indent=2)
@@ -64,6 +71,7 @@ def main():
     print(f"ETL stub OK ✅  notes={notes_seen}  entities={entities_written}")
     print(f"wrote: {out_path}")
     print(f"manifest: {RUN_MANIFEST_PATH}")
+
 
 if __name__ == "__main__":
     main()

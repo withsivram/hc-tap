@@ -1,1 +1,9 @@
-Python version: 3.12  (create your venv with this)
+Use Python 3.12.6; run make bootstrap. 
+
+Local flow:
+  make etl-spacy && make eval && make dash
+
+To use LLM extraction:
+  1. Set EXTRACTOR_LLM=openai (or anthropic) in .env
+  2. Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) in .env
+  3. Run: make etl-llm && make eval && make dash

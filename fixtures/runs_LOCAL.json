@@ -1,12 +1,49 @@
 {
-  "run_id": "LOCAL",
-  "ts_started": "2025-11-03T06:48:42Z",
-  "ts_finished": "2025-11-03T06:48:42Z",
-  "notes_total": 2,
-  "entities_total": 4,
-  "duration_ms_p50": 0,
-  "duration_ms_p95": 0,
+  "run_id": "LLM",
+  "ts_started": "2025-12-03T21:28:42Z",
+  "ts_finished": "2025-12-03T21:29:23Z",
+  "note_count": 10,
+  "entity_count": 92,
+  "duration_ms_p50": 4172,
+  "duration_ms_p95": 6852,
   "errors": 0,
-  "f1_exact_micro": 1.0,
-  "f1_relaxed_micro": 1.0
+  "ts": "2025-12-03T21:29:23Z",
+  "f1_exact_micro": 0.0,
+  "f1_relaxed_micro": 0.0,
+  "f1_exact_micro_intersection": 0.0,
+  "f1_relaxed_micro_intersection": 0.0,
+  "coverage_gold_items": 28,
+  "coverage_pred_items": 86,
+  "coverage_gold_notes": 14,
+  "coverage_pred_notes": 9,
+  "coverage_gold_outside_pred_notes": 5,
+  "extractor": "llm",
+  "extractor_metrics": {
+    "llm": {
+      "f1_exact_micro": 0.0,
+      "f1_relaxed_micro": 0.0,
+      "f1_exact_micro_intersection": 0.0,
+      "f1_relaxed_micro_intersection": 0.0,
+      "coverage": {
+        "gold_items": 28,
+        "pred_items": 86,
+        "gold_notes": 14,
+        "pred_notes": 9,
+        "gold_outside_pred_notes": 5
+      }
+    },
+    "spacy": {
+      "f1_exact_micro": 0.0,
+      "f1_relaxed_micro": 0.0,
+      "f1_exact_micro_intersection": 0.0,
+      "f1_relaxed_micro_intersection": 0.0,
+      "coverage": {
+        "gold_items": 28,
+        "pred_items": 686564,
+        "gold_notes": 14,
+        "pred_notes": 4966,
+        "gold_outside_pred_notes": 0
+      }
+    }
+  }
 }

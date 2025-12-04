@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-12-04T00:41:39Z",
+  "extractor": "llm",
+  "sample_size": 5,
+  "avg_precision": 9.4,
+  "avg_recall": 9.2,
+  "details": [
+    {
+      "precision_score": 10,
+      "recall_score": 9,
+      "reasoning": "The extracted entities are all accurately mentioned in the clinical text and correctly classified as PROBLEMS. The only potential issue is that the extractor may have missed the mention of 'Normal LV systolic function' under the DOPPLER section, which could be considered a separate problem statement from the one under the IMPRESSION section.",
+      "note_id": "note_010",
+      "entity_count": 12
+    },
+    {
+      "precision_score": 10,
+      "recall_score": 10,
+      "reasoning": "The extracted entities are accurately mentioned in the clinical text and correctly classified as PROBLEMS. The extractor did not miss any obvious PROBLEMS or MEDICATIONS in the text.",
+      "note_id": "note_006",
+      "entity_count": 2
+    },
+    {
+      "precision_score": 9,
+      "recall_score": 9,
+      "reasoning": "The extracted entities accurately represent the problems mentioned in the clinical text, with only minor potential issues. The extractor seems to have captured all the key findings from the 2D echocardiogram report. One potential issue is that 'normal' could be considered a modifier rather than a standalone problem, but the overall extraction is very good.",
+      "note_id": "note_008",
+      "entity_count": 15
+    },
+    {
+      "precision_score": 9,
+      "recall_score": 9,
+      "reasoning": "The extracted entities are largely accurate and correctly classified as PROBLEMS based on the clinical text provided. The majority of the mentioned problems are captured, with only a few minor details potentially missing. Overall, the extraction quality is very good.",
+      "note_id": "note_005",
+      "entity_count": 12
+    },
+    {
+      "precision_score": 9,
+      "recall_score": 9,
+      "reasoning": "The extracted entities are largely accurate and correctly classified. The clinical text mentions all the PROBLEMS and MEDICATIONS that were extracted, with the exception of 'difficulty climbing stairs', 'difficulty with airline seats', 'tying shoes', 'used to public seating', 'difficulty walking', and 'difficulty walking two blocks or going eight to ten steps', which were not captured by the extractor. Additionally, the text mentions 'obesity' and 'heart disease' in the family history, which were not extracted. Overall, the extraction quality is very good, with only a few minor omissions.",
+      "note_id": "note_003",
+      "entity_count": 19
+    }
+  ]
+}

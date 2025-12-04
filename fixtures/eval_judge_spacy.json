@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-12-04T00:41:21Z",
+  "extractor": "spacy",
+  "sample_size": 5,
+  "avg_precision": 3.6,
+  "avg_recall": 3.4,
+  "details": [
+    {
+      "precision_score": 0,
+      "recall_score": 0,
+      "reasoning": "Error: Invalid control character at: line 4 column 197 (char 247)",
+      "note_id": "note_2427",
+      "entity_count": 176
+    },
+    {
+      "precision_score": 0,
+      "recall_score": 0,
+      "reasoning": "Error: Invalid control character at: line 4 column 245 (char 295)",
+      "note_id": "note_1862",
+      "entity_count": 248
+    },
+    {
+      "precision_score": 0,
+      "recall_score": 0,
+      "reasoning": "Error: Invalid control character at: line 4 column 250 (char 300)",
+      "note_id": "note_3747",
+      "entity_count": 172
+    },
+    {
+      "precision_score": 9,
+      "recall_score": 9,
+      "reasoning": "The extracted entities generally match the clinical text well, with a few minor issues. The precision is high, as most of the extracted entities are accurately mentioned in the text and correctly classified as PROBLEMS or MEDICATIONS. The recall is also high, as the extractor captured the majority of the key PROBLEMS and MEDICATIONS discussed in the passage. A few minor issues: the extractor missed a couple of specific PROBLEM mentions like 'dull, achy, constant' pain, and it classified some high-level concepts like 'Chief Complaint', 'History of Present Illness', and 'Physical Examination' as PROBLEMS when they are not really specific medical problems. Overall, the extraction is of high quality and captures the most salient information from the clinical text.",
+      "note_id": "note_4382",
+      "entity_count": 216
+    },
+    {
+      "precision_score": 9,
+      "recall_score": 8,
+      "reasoning": "The extractor did a good job of identifying most of the relevant PROBLEMS and MEDICATIONS mentioned in the clinical text. However, it missed a few items, such as the specific details about the patient's lung nodule (e.g., it was treated by excision in February 2007) and the fact that the patient recently started taking Zyprexa. Additionally, some of the extracted entities could be more precisely classified, such as differentiating between the various types of pain (somatic, neuropathic) mentioned in the text.",
+      "note_id": "note_3109",
+      "entity_count": 180
+    }
+  ]
+}

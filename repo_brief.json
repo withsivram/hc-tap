@@ -1,0 +1,99 @@
+{
+  "repo": {
+    "name": "hc-tap",
+    "language_mix": ["Python", "JSON", "Markdown", "YAML", "Makefile"],
+    "build": ["make bootstrap"],
+    "run": [
+      "make etl-stub - Run ETL pipeline",
+      "make api-stub - Start FastAPI server",
+      "make dash - Launch Streamlit dashboard",
+      "make eval - Run entity evaluation",
+      "make extract-local - Extract entities",
+      "make test - Validate fixtures"
+    ],
+    "env": ["DEBUG_EVAL=1"]
+  },
+  "dependencies": {
+    "manifests": [
+      {
+        "path": "requirements.txt",
+        "sha256": "unknown",
+        "packages": [
+          "jsonschema==4.23.0",
+          "fastapi==0.115.0",
+          "uvicorn==0.30.0",
+          "pandas==2.2.2", 
+          "streamlit==1.38.0"
+        ]
+      }
+    ],
+    "graph": [
+      {"from": "services.eval", "to": "fixtures"},
+      {"from": "services.etl", "to": "fixtures"},
+      {"from": "services.api", "to": "services.etl"},
+      {"from": "services.analytics", "to": "fixtures"}
+    ]
+  },
+  "files": [
+    {
+      "path": "services/eval/evaluate_entities.py",
+      "size": 5432,
+      "language": "Python",
+      "summary": "Evaluates extracted entities against gold standard, computing exact and relaxed F1 scores. Includes deduplication logic and persistence to run manifest.",
+      "symbols": [
+        {"name": "dedupe", "kind": "function", "signature": "dedupe(rows: List[Dict]) -> List[Dict]"},
+        {"name": "evaluate", "kind": "function", "signature": "evaluate(mode_label: str, gold: List[Dict], pred: List[Dict]) -> Tuple[Dict, Dict]"},
+        {"name": "persist_micro_f1", "kind": "function", "signature": "persist_micro_f1(exact_micro_f1: float, relaxed_micro_f1: float) -> None"}
+      ],
+      "imports": ["json", "os", "math", "collections.defaultdict", "collections.Counter"],
+      "snippets": []
+    },
+    {
+      "path": "contracts/entity.schema.json",
+      "size": 642,
+      "language": "JSON",
+      "summary": "JSON Schema defining entity structure for problems and medications extracted from clinical notes.",
+      "snippets": [
+        {
+          "reason": "schema",
+          "start_line": 1,
+          "end_line": 22,
+          "text": "See file contents above"
+        }
+      ]
+    },
+    {
+      "path": "contracts/note.schema.json",
+      "size": 384,
+      "language": "JSON", 
+      "summary": "JSON Schema defining clinical note structure.",
+      "snippets": [
+        {
+          "reason": "schema",
+          "start_line": 1,
+          "end_line": 12,
+          "text": "See file contents above"
+        }
+      ]
+    },
+    {
+      "path": "scripts/validate_fixtures.py",
+      "size": 2145,
+      "language": "Python",
+      "summary": "Validates fixture data (notes and entities) against JSON schemas and checks entity spans.",
+      "symbols": [],
+      "imports": ["json", "sys", "glob", "os", "jsonschema"],
+      "snippets": []
+    }
+  ],
+  "tests": {
+    "commands": ["make test"],
+    "failures": [],
+    "coverage": {"lines": "unknown", "reports": []}
+  },
+  "notes": {
+    "todos": [],
+    "fixmes": [],
+    "security": []
+  }
+}

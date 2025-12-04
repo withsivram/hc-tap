@@ -3,3 +3,8 @@ fastapi==0.115.0
 uvicorn==0.30.0
 pandas==2.2.2
 streamlit==1.38.0
+spacy==3.7.5
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+openai==1.40.0
+anthropic
+python-dotenv==0.34.0
