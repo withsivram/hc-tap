@@ -1,76 +1,122 @@
-#!/usr/bin/env python3
-"""Local ETL stub: bundles fixture entity lines into enriched/ JSONL and writes a run manifest."""
+from __future__ import annotations
 
 import datetime
-import glob
 import json
-import os
+from pathlib import Path
 
-NOTES_DIR = "fixtures/notes"
-SRC_ENTITIES_DIR = "fixtures/entities"
-ENRICHED_DIR = "fixtures/enriched/entities/run=LOCAL"
-RUN_MANIFEST_PATH = "fixtures/runs_LOCAL.json"
+# External contract: keep these paths/names stable.
+RUN_ID = Path().resolve().joinpath().name and "LOCAL"
+NOTES_DIR = Path("fixtures/notes")
+SRC_ENTITIES_DIR = Path("fixtures/entities")
+ENRICHED_DIR = Path(f"enriched/entities/run={RUN_ID}")
+RUN_MANIFEST_PATH = Path("runs/runs_local.json")
+
+REQUIRED_KEYS = [
+    "note_id",
+    "run_id",
+    "entity_type",
+    "text",
+    "norm_text",
+    "begin",
+    "end",
+    "score",
+    "section",
+]
 
 
-def utc_now_iso():
-    # Normalize UTC offset to 'Z' for ISO 8601 compliance
+def iso_utc() -> str:
     return (
         datetime.datetime.now(datetime.timezone.utc)
-        .isoformat(timespec="seconds")
+        .replace(microsecond=0)
+        .isoformat()
         .replace("+00:00", "Z")
     )
 
 
-def main():
-    os.makedirs(ENRICHED_DIR, exist_ok=True)
-    out_path = os.path.join(ENRICHED_DIR, "part-000.jsonl")
+def read_json(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
-    note_paths = sorted(glob.glob(os.path.join(NOTES_DIR, "*.json")))
+
+def iter_note_files() -> list[Path]:
+    return sorted(NOTES_DIR.glob("*.json"))
+
+
+def iter_entities_for_note(note_id: str):
+    src = SRC_ENTITIES_DIR / f"{note_id}.jsonl"
+    if not src.exists():
+        return
+    with src.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                yield json.loads(line)
+
+
+def normalize_entity(obj: dict, note: dict) -> dict:
+    obj.setdefault("run_id", RUN_ID)
+    obj.setdefault("norm_text", note.get("text", ""))
+    obj.setdefault("section", note.get("section", "unknown"))
+    for key in REQUIRED_KEYS:
+        obj.setdefault(key, None)
+    return obj
+
+
+def write_manifest(processed_notes: int) -> None:
+    record = {
+        "run_id": RUN_ID,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "error_rate": 0.0,
+        "processed_notes": processed_notes,
+    }
+
+    RUN_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    manifest: list = []
+
+    if RUN_MANIFEST_PATH.exists():
+        try:
+            with RUN_MANIFEST_PATH.open("r", encoding="utf-8") as f:
+                existing = json.load(f)
+            if isinstance(existing, list):
+                manifest = [r for r in existing if str(r.get("run_id")) != str(RUN_ID)]
+        except Exception:
+            # If the file is unreadable, start fresh.
+            manifest = []
+
+    manifest.append(record)
+    with RUN_MANIFEST_PATH.open("w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+
+def main() -> None:
+    ENRICHED_DIR.mkdir(parents=True, exist_ok=True)
+    out_file = ENRICHED_DIR / "entities_part1.jsonl"
+
+    # Start clean; then append.
+    out_file.write_text("", encoding="utf-8")
+
     notes_seen = 0
-    entities_written = 0
+    ents_written = 0
 
-    ts_started = utc_now_iso()
-
-    with open(out_path, "w", encoding="utf-8") as out_f:
-        for np in note_paths:
-            with open(np, "r", encoding="utf-8") as nf:
-                note = json.load(nf)
+    with out_file.open("a", encoding="utf-8") as sink:
+        for note_path in iter_note_files():
+            note = read_json(note_path)
             note_id = note.get("note_id")
             if not note_id:
                 continue
+
             notes_seen += 1
 
-            src_jsonl = os.path.join(SRC_ENTITIES_DIR, f"{note_id}.jsonl")
-            if not os.path.exists(src_jsonl):
-                # no entities for this note in fixtures; skip silently
-                continue
+            for ent in iter_entities_for_note(note_id):
+                ent = normalize_entity(ent, note)
+                sink.write(json.dumps(ent, ensure_ascii=False) + "\n")
+                ents_written += 1
 
-            with open(src_jsonl, "r", encoding="utf-8") as ef:
-                for line in ef:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    out_f.write(line + "\n")
-                    entities_written += 1
+    write_manifest(notes_seen)
 
-    # Simple manifest (using placeholders for duration p50/p95)
-    ts_finished = utc_now_iso()
-    manifest = {
-        "run_id": "LOCAL",
-        "ts_started": ts_started,
-        "ts_finished": ts_finished,
-        "notes_total": notes_seen,
-        "entities_total": entities_written,
-        "duration_ms_p50": 0,
-        "duration_ms_p95": 0,
-        "errors": 0,
-    }
-    with open(RUN_MANIFEST_PATH, "w", encoding="utf-8") as mf:
-        json.dump(manifest, mf, indent=2)
-
-    print(f"ETL stub OK ✅  notes={notes_seen}  entities={entities_written}")
-    print(f"wrote: {out_path}")
-    print(f"manifest: {RUN_MANIFEST_PATH}")
+    print(f"[etl_stub] notes={notes_seen} entities={ents_written} → {out_file}")
+    print(f"[etl_stub] manifest → {RUN_MANIFEST_PATH}")
 
 
 if __name__ == "__main__":

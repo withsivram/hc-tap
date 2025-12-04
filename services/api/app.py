@@ -1,15 +1,32 @@
 import json
 import os
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-APP_RUN_ID = "LOCAL"
-NOTES_DIR = "fixtures/notes"
-ENRICHED_FILE = f"fixtures/enriched/entities/run={APP_RUN_ID}/part-000.jsonl"
-RUN_MANIFEST = "fixtures/runs_LOCAL.json"
+from services.api.settings import settings
+
+APP_RUN_ID = settings.APP_RUN_ID
+NOTES_DIR = settings.NOTES_DIR
+ENRICHED_FILE = f"{settings.ENRICHED_DIR}/run={APP_RUN_ID}/part-000.jsonl"
+RUN_MANIFEST = settings.RUN_MANIFEST
 
 app = FastAPI(title="HC-TAP API", version="1.0.0")
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+
+@app.get("/config")
+def config():
+    return {
+        "RUN_ID": APP_RUN_ID,
+        "NOTES_DIR": NOTES_DIR,
+        "ENRICHED_FILE": ENRICHED_FILE,
+        "RUN_MANIFEST": RUN_MANIFEST,
+    }
 
 
 def load_notes():
@@ -33,9 +50,21 @@ def load_entities_index():
     """Return (all_entities_list, by_note_id_dict)."""
     all_ents = []
     by_note = {}
-    if not os.path.exists(ENRICHED_FILE):
+
+    # Target specific run if it exists, otherwise empty
+    # Ideally this should be dynamic based on query param or fallback to 'spacy' if LOCAL missing
+    target_file = ENRICHED_FILE
+
+    # Quick hack: if ENRICHED_FILE (e.g. run=LOCAL) is missing, try run=spacy
+    if not os.path.exists(target_file):
+        alt_path = target_file.replace(f"run={APP_RUN_ID}", "run=spacy")
+        if os.path.exists(alt_path):
+            target_file = alt_path
+
+    if not os.path.exists(target_file):
         return all_ents, by_note
-    with open(ENRICHED_FILE, "r", encoding="utf-8") as f:
+
+    with open(target_file, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -81,11 +110,6 @@ def get_note(note_id: str):
 
 @app.get("/stats/run/{run_id}")
 def get_run_stats(run_id: str):
-    if run_id != "LOCAL":
-        return JSONResponse(
-            status_code=404, content={"error": "not_found", "message": "run not found"}
-        )
-
     if not os.path.exists(RUN_MANIFEST):
         return JSONResponse(
             status_code=404,

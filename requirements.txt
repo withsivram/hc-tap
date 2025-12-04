@@ -8,3 +8,6 @@ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_s
 openai==1.40.0
 anthropic
 python-dotenv==0.34.0
+pyarrow
+duckdb
+pytest
