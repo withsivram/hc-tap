@@ -34,6 +34,7 @@ NOTES_DIR = Path("fixtures/notes")
 ENRICHED_DIR = Path("fixtures/enriched/entities/run=LOCAL")
 OUTPUT_FILE = ENRICHED_DIR / "part-000.jsonl"
 MANIFEST_PATH = Path("fixtures/runs_LOCAL.json")
+GOLD_PATH = Path("gold/gold_LOCAL.jsonl")
 HC_DEBUG = os.getenv("HC_TAP_DEBUG", "0") == "1"
 RANDOM_SEED = int(os.getenv("RANDOM_SEED", "1337"))
 random.seed(RANDOM_SEED)
@@ -76,6 +77,15 @@ def quantile_ms(samples: List[float], q: float) -> int:
 
 
 def iter_note_paths() -> Iterable[Path]:
+    filter_mode = os.getenv("NOTE_FILTER", "").lower()
+    if filter_mode == "gold" and GOLD_PATH.exists():
+        with GOLD_PATH.open("r", encoding="utf-8") as fh:
+            note_ids = sorted(
+                {json.loads(line).get("note_id") for line in fh if line.strip()}
+            )
+        paths = [NOTES_DIR / f"{nid}.json" for nid in note_ids if nid]
+        log(f"gold-only mode: {len(paths)} notes", debug=False)
+        return paths
     return sorted(NOTES_DIR.glob("*.json"))
 
 

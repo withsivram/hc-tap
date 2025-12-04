@@ -3,8 +3,11 @@ import os
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from services.api.settings import settings
+from services.etl.preprocess import normalize_text
+from services.etl.rule_extract import extract_for_note
 
 APP_RUN_ID = settings.APP_RUN_ID
 NOTES_DIR = settings.NOTES_DIR
@@ -54,12 +57,6 @@ def load_entities_index():
     # Target specific run if it exists, otherwise empty
     # Ideally this should be dynamic based on query param or fallback to 'spacy' if LOCAL missing
     target_file = ENRICHED_FILE
-
-    # Quick hack: if ENRICHED_FILE (e.g. run=LOCAL) is missing, try run=spacy
-    if not os.path.exists(target_file):
-        alt_path = target_file.replace(f"run={APP_RUN_ID}", "run=spacy")
-        if os.path.exists(alt_path):
-            target_file = alt_path
 
     if not os.path.exists(target_file):
         return all_ents, by_note
@@ -125,6 +122,12 @@ def get_run_stats(run_id: str):
             content={"error": "not_found", "message": "manifest invalid"},
         )
 
+    if manifest.get("run_id") != run_id:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "not_found", "message": "run not found"},
+        )
+
     return {
         "run_id": manifest.get("run_id"),
         "note_count": manifest.get("note_count", manifest.get("notes_total")),
@@ -166,3 +169,19 @@ def search_entities(
         ]
 
     return items[:limit]
+
+
+class ExtractRequest(BaseModel):
+    text: str
+    note_id: str | None = None
+
+
+@app.post("/extract")
+def extract_text(request: ExtractRequest):
+    text = normalize_text(request.text)
+    note_payload = {
+        "note_id": request.note_id or "demo",
+        "text": text,
+    }
+    entities = extract_for_note(note_payload)
+    return {"entities": entities}

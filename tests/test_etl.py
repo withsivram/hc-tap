@@ -12,7 +12,7 @@ def test_normalize_text():
 
 def test_rule_extract_problem():
     text = "Patient complains of chest tightness."
-    spans = find_spans(text, PROBLEM_TERMS, with_dose=False)
+    spans = list(find_spans(text, PROBLEM_TERMS, with_dose=False))
     # "chest tightness" is in PROBLEM_TERMS
     assert len(spans) >= 1
     found = [s[3] for s in spans]  # norm text
@@ -21,7 +21,7 @@ def test_rule_extract_problem():
 
 def test_rule_extract_medication():
     text = "Started on metformin 500 mg daily."
-    spans = find_spans(text, MEDICATION_TERMS, with_dose=True)
+    spans = list(find_spans(text, MEDICATION_TERMS, with_dose=True))
     # "metformin" is in MEDICATION_TERMS
     assert len(spans) >= 1
     found = [s[3] for s in spans]

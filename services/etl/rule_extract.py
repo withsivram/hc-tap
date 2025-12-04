@@ -6,9 +6,14 @@ import math
 import os
 import re
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Tuple
 
+from services.etl.sections import detect_sections, in_section
+
+PROFILE = os.getenv("RULES_PROFILE", "default").lower()
+HC_DEBUG = os.getenv("HC_TAP_DEBUG", "0") == "1"
 RUN_ID = os.getenv("RUN_ID", "LOCAL")
 NOTES_DIR = Path("fixtures/notes")
 ENRICHED_DIR = Path(f"enriched/entities/run={RUN_ID}")
@@ -89,6 +94,23 @@ PROBLEM_STOPWORDS = {
 }
 NEGATION_RE = re.compile(r"\b(no|denies|without|free of)\b", re.IGNORECASE)
 DOSE_RE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|units?|iu)\b", re.IGNORECASE)
+DOSE_TOKEN_RE = re.compile(
+    r"(?:mg|mcg|g|ml|units?|iu|tab|tabs|caps?|q\d?h|bid|tid|qhs)", re.IGNORECASE
+)
+TOKEN_RE = re.compile(r"[A-Za-z']+")
+POSITIVE_CONTEXT_TOKENS = {
+    "has",
+    "with",
+    "presents",
+    "reports",
+    "diagnosed",
+    "assessment",
+    "shows",
+    "exhibits",
+    "complains",
+    "complaint",
+}
+ROS_GENERIC_SUPPRESS = {"vomiting", "fever", "headache", "nausea", "dizziness"}
 CLINICAL_HINT_RE = re.compile(
     r"(itis|osis|emia|algia|cough|fever|pain|injury|fracture|diabetes|hypertension|asthma|infection|rash|edema|nausea|vomiting|tightness|fatigue)",
     re.IGNORECASE,
@@ -109,6 +131,17 @@ HIGH_CONF_PROBLEMS = {
     "headache",
     "back pain",
 }
+
+HISTORY_SECTIONS = {
+    "past medical history",
+    "medical history",
+    "family history",
+    "social history",
+}
+ROS_SECTIONS = {"review of systems", "ros"}
+HPI_SECTIONS = {"history of present illness"}
+ASSESS_SECTIONS = {"assessment", "impression", "plan"}
+MED_SECTIONS = {"medications"}
 
 REQUIRED_KEYS = [
     "note_id",
@@ -203,6 +236,15 @@ def compute_history_cutoff(text: str) -> int:
     return min(indices) if indices else -1
 
 
+def section_for_span(
+    sections: List[Tuple[str, int, int]], text: str, begin: int
+) -> str:
+    for name, start, end in sections:
+        if start <= begin < end:
+            return name
+    return guess_section(text, begin).lower()
+
+
 def has_dose_context(text: str, begin: int, end: int) -> bool:
     window = text[max(0, begin - 60) : min(len(text), end + 60)]
     return bool(DOSE_RE.search(window))
@@ -238,35 +280,63 @@ def looks_clinical(norm: str) -> bool:
     return bool(CLINICAL_HINT_RE.search(norm))
 
 
-def in_history_section(text: str, begin: int) -> bool:
-    window = text[max(0, begin - 200) : begin].lower()
-    history_markers = (
-        "past medical history",
-        "pmh",
-        "medical history",
-        "surgical history",
-        "family history",
-        "social history",
-        "history of",
-        "hx of",
-        "ros:",
-        "review of systems",
-    )
-    return any(marker in window for marker in history_markers)
+def tokenize(text: str) -> List[Tuple[str, int, int]]:
+    return [
+        (match.group(0).lower(), match.start(), match.end())
+        for match in TOKEN_RE.finditer(text)
+    ]
+
+
+def tokens_near(
+    tokens: List[Tuple[str, int, int]], begin: int, end: int, window: int
+) -> List[str]:
+    if not tokens:
+        return []
+    idx = 0
+    for i, (_, start, stop) in enumerate(tokens):
+        if start <= begin < stop or (start >= begin and start < end):
+            idx = i
+            break
+        if start > begin:
+            idx = i
+            break
+    start_idx = max(0, idx - window)
+    end_idx = min(len(tokens), idx + window + 1)
+    return [tokens[i][0] for i in range(start_idx, end_idx)]
+
+
+def has_positive_context(
+    tokens: List[Tuple[str, int, int]], begin: int, end: int
+) -> bool:
+    window_tokens = tokens_near(tokens, begin, end, 5)
+    return any(token in POSITIVE_CONTEXT_TOKENS for token in window_tokens)
+
+
+def has_dose_tokens(tokens: List[Tuple[str, int, int]], begin: int, end: int) -> bool:
+    window_tokens = tokens_near(tokens, begin, end, 3)
+    return any(DOSE_TOKEN_RE.fullmatch(token) for token in window_tokens)
 
 
 def should_keep_med(
-    span: str, norm: str, text: str, begin: int, end: int, section: str
+    span: str,
+    norm: str,
+    text: str,
+    begin: int,
+    end: int,
+    section_name: str,
 ) -> bool:
     if len(norm) < 4:
         return False
     if norm in MED_STOPWORDS:
         return False
     has_suffix_match = norm in MEDICATION_TERMS or has_suffix(norm)
-    if section.lower() != "plan" and not has_dose_context(text, begin, end):
-        if not has_suffix_match:
+    has_dose = has_dose_context(text, begin, end)
+    section = (section_name or "unknown").lower()
+    if PROFILE == "strict":
+        in_preferred_section = section in MED_SECTIONS or section in ASSESS_SECTIONS
+        if not in_preferred_section and not has_dose and not has_suffix_match:
             return False
-    if not has_suffix_match and not has_dose_context(text, begin, end):
+    if not has_suffix_match and not has_dose:
         return False
     return True
 
@@ -277,7 +347,7 @@ def should_keep_problem(
     text: str,
     begin: int,
     end: int,
-    section: str,
+    section_name: str,
     history_cutoff: int,
 ) -> bool:
     if len(norm) < 4:
@@ -289,11 +359,19 @@ def should_keep_problem(
         return False
     if "family history" in window or "history of" in window:
         return False
-    if history_cutoff != -1 and begin > history_cutoff:
-        return False
-    if in_history_section(text, begin):
-        return False
-    if not has_context_keyword(text, begin, end) and section.lower() != "assessment":
+    section = (section_name or "unknown").lower()
+    if PROFILE == "strict":
+        if history_cutoff != -1 and begin > history_cutoff:
+            return False
+        if section in HISTORY_SECTIONS and not has_context_keyword(text, begin, end):
+            return False
+        if section in ROS_SECTIONS and not has_context_keyword(text, begin, end):
+            return False
+        if section in HPI_SECTIONS and not has_context_keyword(text, begin, end):
+            return False
+    if not has_context_keyword(text, begin, end) and section not in ASSESS_SECTIONS:
+        if PROFILE == "strict":
+            return False
         if norm not in HIGH_CONF_PROBLEMS and not looks_clinical(norm):
             return False
     if (
@@ -315,12 +393,43 @@ def extract_for_note(note: Dict) -> List[Dict]:
     rows: List[Dict] = []
     seen = set()
     history_cut = compute_history_cutoff(text)
+    sections = detect_sections(text)
+    tokens = tokenize(text)
+    debug_counts = defaultdict(int) if PROFILE == "strict" and HC_DEBUG else None
 
     for begin, end, span, norm in find_spans(text, PROBLEM_TERMS, with_dose=False):
         if begin >= end:
             continue
         norm_clean = norm.strip().lower()
-        section = guess_section(text, begin)
+        section = section_for_span(sections, text, begin)
+        if PROFILE == "strict" and debug_counts is not None:
+            debug_counts[f"problem_candidates_{section}"] += 1
+        suppress = False
+        if PROFILE == "strict":
+            positive_context = has_positive_context(tokens, begin, end) or (
+                section in ASSESS_SECTIONS
+            )
+            if in_section(begin, end, sections, ROS_SECTIONS) and not positive_context:
+                if debug_counts is not None:
+                    debug_counts["suppressed_by_ros"] += 1
+                suppress = True
+            elif (
+                in_section(begin, end, sections, HISTORY_SECTIONS)
+                and not positive_context
+            ):
+                if debug_counts is not None:
+                    debug_counts["suppressed_by_pmh"] += 1
+                suppress = True
+            elif (
+                norm_clean in ROS_GENERIC_SUPPRESS
+                and in_section(begin, end, sections, ROS_SECTIONS)
+                and not positive_context
+            ):
+                if debug_counts is not None:
+                    debug_counts["suppressed_ros_generic"] += 1
+                suppress = True
+            if suppress:
+                continue
         if not should_keep_problem(
             span, norm_clean, text, begin, end, section, history_cut
         ):
@@ -347,7 +456,17 @@ def extract_for_note(note: Dict) -> List[Dict]:
         if begin >= end:
             continue
         norm_clean = norm.strip().lower()
-        section = guess_section(text, begin)
+        section = section_for_span(sections, text, begin)
+        if PROFILE == "strict":
+            dose_ok = has_dose_tokens(tokens, begin, end)
+            in_med = in_section(begin, end, sections, MED_SECTIONS)
+            in_plan = in_section(begin, end, sections, {"plan"})
+            if in_med and debug_counts is not None:
+                debug_counts["allowed_in_meds_section"] += 1
+            if not (dose_ok or in_med or in_plan):
+                if debug_counts is not None:
+                    debug_counts["suppressed_no_dose"] += 1
+                continue
         if not should_keep_med(span, norm_clean, text, begin, end, section):
             continue
         key = (note_id, "MEDICATION", begin, end, norm_clean)
@@ -368,6 +487,9 @@ def extract_for_note(note: Dict) -> List[Dict]:
             )
         )
 
+    if PROFILE == "strict" and debug_counts:
+        for key, value in sorted(debug_counts.items()):
+            print(f"[ETL|STRICT] {key}={value}")
     return rows
 
 

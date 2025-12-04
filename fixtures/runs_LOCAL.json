@@ -1,13 +1,13 @@
 {
-  "run_id": "LLM",
-  "ts_started": "2025-12-03T21:28:42Z",
-  "ts_finished": "2025-12-03T21:29:23Z",
-  "note_count": 10,
-  "entity_count": 92,
-  "duration_ms_p50": 4172,
-  "duration_ms_p95": 6852,
+  "run_id": "LOCAL",
+  "ts_started": "2025-12-04T06:18:03Z",
+  "ts_finished": "2025-12-04T06:18:08Z",
+  "note_count": 4966,
+  "entity_count": 5421,
+  "duration_ms_p50": 1,
+  "duration_ms_p95": 2,
   "errors": 0,
-  "ts": "2025-12-03T21:29:23Z",
+  "ts": "2025-12-04T06:18:08Z",
   "f1_exact_micro": 0.0,
   "f1_relaxed_micro": 0.0,
   "f1_exact_micro_intersection": 0.0,
@@ -17,7 +17,7 @@
   "coverage_gold_notes": 14,
   "coverage_pred_notes": 9,
   "coverage_gold_outside_pred_notes": 5,
-  "extractor": "llm",
+  "extractor": "rule",
   "extractor_metrics": {
     "llm": {
       "f1_exact_micro": 0.0,
@@ -44,6 +44,36 @@
         "pred_notes": 4966,
         "gold_outside_pred_notes": 0
       }
+    },
+    "local": {
+      "strict_exact": {
+        "micro_precision": 0.0040582918280760005,
+        "micro_recall": 0.39285714285714285,
+        "micro_f1": 0.008033595033777615
+      },
+      "strict_relaxed": {
+        "micro_precision": 0.0040582918280760005,
+        "micro_recall": 0.39285714285714285,
+        "micro_f1": 0.008033595033777615
+      },
+      "intersection_exact": {
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.5789473684210527,
+        "micro_f1": 0.4943820224719101
+      },
+      "intersection_relaxed": {
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.5789473684210527,
+        "micro_f1": 0.4943820224719101
+      },
+      "coverage": {
+        "gold_items": 56,
+        "pred_items": 5421,
+        "gold_notes": 34,
+        "pred_notes": 1664,
+        "gold_outside_pred_notes": 10
+      }
     }
-  }
+  },
+  "manifest_version": 1
 }

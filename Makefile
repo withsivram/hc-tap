@@ -2,7 +2,7 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack eval-report gold-promote
+	curation-pack eval-report gold-promote etl-gold etl-strict
 
 docker-up:
 	docker-compose up --build
@@ -52,6 +52,12 @@ validate:
 
 etl-local: validate
 	python services/etl/etl_local.py
+
+etl-gold: validate
+	NOTE_FILTER=gold python services/etl/etl_local.py
+
+etl-strict: validate
+	RULES_PROFILE=strict python services/etl/etl_local.py
 
 etl-spacy:
 	EXTRACTOR=spacy python services/etl/etl_local.py
@@ -122,6 +128,8 @@ help:
 	@printf "  %-15s %s\n" "ingest-100" "Ingest 100 notes from MTSamples CSV."
 	@printf "  %-15s %s\n" "validate" "Validate fixtures/notes via JSON schema."
 	@printf "  %-15s %s\n" "etl-local" "Run rule-based ETL (validates first)."
+	@printf "  %-15s %s\n" "etl-gold" "Run ETL only for notes present in gold."
+	@printf "  %-15s %s\n" "etl-strict" "Run ETL with RULES_PROFILE=strict for FP-cutting."
 	@printf "  %-15s %s\n" "etl-spacy" "Run ETL using the spaCy extractor."
 	@printf "  %-15s %s\n" "etl-llm" "Run ETL using the LLM extractor."
 	@printf "  %-15s %s\n" "eval" "Evaluate LOCAL predictions vs. gold."
