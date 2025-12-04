@@ -1,7 +1,11 @@
-Use Python 3.12.6; run make bootstrap. 
+Use Python 3.12.6; run `make bootstrap` once to install deps.
 
-Local flow:
-  make etl-spacy && make eval && make dash
+Phase-3 quickstart (rule-based baseline):
+  make ingest-50
+  make validate
+  make etl-local
+  make eval
+  make dash
 
 To use LLM extraction:
   1. Set EXTRACTOR_LLM=openai (or anthropic) in .env
