@@ -4,13 +4,17 @@ import unicodedata
 
 def normalize_text(text: str) -> str:
     """
-    Normalize text: unicode NFKC, strip, collapse whitespace.
+    Normalize text with unicode NFKC, strip, and whitespace collapse.
     """
     if not text:
         return ""
-    # Unicode normalization
     text = unicodedata.normalize("NFKC", text)
-    # Collapse whitespace
     text = re.sub(r"\s+", " ", text)
-    # Strip
     return text.strip()
+
+
+def normalize_entity_text(text: str) -> str:
+    """
+    Canonicalize entity surface text once to avoid downstream drift.
+    """
+    return (text or "").strip().lower()

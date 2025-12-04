@@ -1,177 +1,201 @@
-#!/usr/bin/env python3
-"""
-Local rule-based extractor:
-- Reads fixtures/notes/*.json
-- Finds PROBLEM & MEDICATION spans via simple regex/lexicons
-- Writes per-note JSONL in fixtures/entities/{note_id}.jsonl
-- Bundles all into fixtures/enriched/entities/run=LOCAL/part-000.jsonl
-- Updates fixtures/runs_LOCAL.json with p50/p95 and counts
-"""
+from __future__ import annotations
 
 import datetime
-import glob
 import json
 import math
 import os
 import re
 import time
+from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Tuple
 
-NOTES_DIR = "fixtures/notes"
-ENTITIES_DIR = "fixtures/entities"
-ENRICHED_DIR = "fixtures/enriched/entities/run=LOCAL"
-RUN_MANIFEST_PATH = "fixtures/runs_LOCAL.json"
+RUN_ID = os.getenv("RUN_ID", "LOCAL")
+NOTES_DIR = Path("fixtures/notes")
+ENRICHED_DIR = Path(f"enriched/entities/run={RUN_ID}")
+RUN_MANIFEST_PATH = Path("runs/runs_local.json")
 
-# Tiny lexicons (extend as needed)
 PROBLEM_TERMS = ["hypertension", "chest tightness", "diabetes", "asthma"]
 MEDICATION_TERMS = ["metformin", "lisinopril", "atorvastatin", "ibuprofen"]
+DOSAGE_RE = r"(?:\s+\d+\s*(?:mg|mcg|g))?"
 
-DOSAGE_RE = r"(?:\s+\d+\s*(?:mg|mcg|g))?"  # optional dose like " 10 mg"
+REQUIRED_KEYS = [
+    "note_id",
+    "run_id",
+    "entity_type",
+    "text",
+    "norm_text",
+    "begin",
+    "end",
+    "score",
+    "section",
+]
 
 
-def utc_now_iso():
+def utc_iso() -> str:
     return (
-        datetime.datetime.now(datetime.UTC)
+        datetime.datetime.now(datetime.timezone.utc)
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z")
     )
 
 
-def quantile_ms(values, q):
-    if not values:
-        return 0
-    xs = sorted(values)
-    # nearest-rank method (conservative)
-    k = max(1, math.ceil(q * len(xs)))
-    return int(round(xs[k - 1] * 1000))
-
-
-def median_ms(values):
-    if not values:
-        return 0
-    xs = sorted(values)
+def median_ms(samples: List[float]) -> float:
+    if not samples:
+        return 0.0
+    xs = sorted(samples)
     n = len(xs)
-    if n % 2 == 1:
-        return int(round(xs[n // 2] * 1000))
-    return int(round((xs[n // 2 - 1] + xs[n // 2]) / 2 * 1000))
+    if n % 2:
+        return float(int(round(xs[n // 2] * 1000)))
+    return float(int(round((xs[n // 2 - 1] + xs[n // 2]) / 2 * 1000)))
 
 
-def find_spans(text, terms, with_dose=False):
+def quantile_ms(samples: List[float], q: float) -> float:
+    if not samples:
+        return 0.0
+    xs = sorted(samples)
+    k = max(1, math.ceil(q * len(xs)))
+    return float(int(round(xs[k - 1] * 1000)))
+
+
+def load_notes() -> Iterator[Dict]:
+    for path in sorted(NOTES_DIR.glob("*.json")):
+        with path.open("r", encoding="utf-8") as fh:
+            yield json.load(fh)
+
+
+def find_spans(
+    text: str, terms: Iterable[str], with_dose: bool = False
+) -> Iterator[Tuple[int, int, str, str]]:
     flags = re.IGNORECASE
-    spans = []
     for term in terms:
-        # build pattern
-        if with_dose:
-            pat = rf"\b({re.escape(term)}){DOSAGE_RE}\b"
-        else:
-            pat = rf"\b({re.escape(term)})\b"
-        for m in re.finditer(pat, text, flags):
-            span_text = text[m.start() : m.end()]
-            norm = m.group(1).lower()
-            spans.append((m.start(), m.end(), span_text, norm))
-    return spans
+        pattern = (
+            rf"\b({re.escape(term)}){DOSAGE_RE}\b"
+            if with_dose
+            else rf"\b({re.escape(term)})\b"
+        )
+        for match in re.finditer(pattern, text, flags):
+            yield match.start(), match.end(), text[
+                match.start() : match.end()
+            ], match.group(1).lower()
 
 
-def guess_section(text, begin):
-    # super simple heuristic
-    window = text[max(0, begin - 40) : begin + 40].lower()
-    if "started on" in window or "taking " in window:
-        return "medications"
+def guess_section(text: str, begin: int) -> str:
+    window = text[max(0, begin - 60) : begin + 60].lower()
     if "assessment" in window or "impression" in window:
-        return "assessment"
+        return "Assessment"
+    if "started on" in window or "taking " in window:
+        return "Plan"
     return "unknown"
 
 
-def main():
-    os.makedirs(ENTITIES_DIR, exist_ok=True)
-    os.makedirs(ENRICHED_DIR, exist_ok=True)
+def ensure_contract(row: Dict) -> Dict:
+    for key in REQUIRED_KEYS:
+        row.setdefault(key, None)
+    return row
 
-    note_paths = sorted(glob.glob(os.path.join(NOTES_DIR, "*.json")))
-    per_note_times = []
-    notes_seen = 0
-    entities_total = 0
 
-    ts_started = utc_now_iso()
+def extract_for_note(note: Dict) -> List[Dict]:
+    note_id = note.get("note_id")
+    text = note.get("text", "") or ""
+    if not note_id or not text:
+        return []
 
-    # Per-note JSONL files
-    for np in note_paths:
-        with open(np, "r", encoding="utf-8") as f:
-            note = json.load(f)
-        note_id = note["note_id"]
-        text = note["text"]
-        notes_seen += 1
+    rows: List[Dict] = []
 
-        t0 = time.perf_counter()
+    for begin, end, span, norm in find_spans(text, PROBLEM_TERMS, with_dose=False):
+        rows.append(
+            dict(
+                note_id=note_id,
+                run_id=RUN_ID,
+                entity_type="PROBLEM",
+                text=span,
+                norm_text=norm,
+                begin=begin,
+                end=end,
+                score=0.90,
+                section=guess_section(text, begin),
+            )
+        )
 
-        # Problems
-        for b, e, span_text, norm in find_spans(text, PROBLEM_TERMS, with_dose=False):
-            obj = {
-                "note_id": note_id,
-                "run_id": "LOCAL",
-                "entity_type": "PROBLEM",
-                "text": span_text,
-                "norm_text": norm,
-                "begin": b,
-                "end": e,
-                "score": 0.90,
-                "section": guess_section(text, b),
-            }
-            out_path = os.path.join(ENTITIES_DIR, f"{note_id}.jsonl")
-            with open(out_path, "a", encoding="utf-8") as out_f:
-                out_f.write(json.dumps(obj) + "\n")
-            entities_total += 1
+    for begin, end, span, norm in find_spans(text, MEDICATION_TERMS, with_dose=True):
+        rows.append(
+            dict(
+                note_id=note_id,
+                run_id=RUN_ID,
+                entity_type="MEDICATION",
+                text=span,
+                norm_text=norm,
+                begin=begin,
+                end=end,
+                score=0.95,
+                section=guess_section(text, begin),
+            )
+        )
 
-        # Medications (allow optional dose)
-        for b, e, span_text, norm in find_spans(text, MEDICATION_TERMS, with_dose=True):
-            obj = {
-                "note_id": note_id,
-                "run_id": "LOCAL",
-                "entity_type": "MEDICATION",
-                "text": span_text,
-                "norm_text": norm,
-                "begin": b,
-                "end": e,
-                "score": 0.95,
-                "section": guess_section(text, b),
-            }
-            out_path = os.path.join(ENTITIES_DIR, f"{note_id}.jsonl")
-            with open(out_path, "a", encoding="utf-8") as out_f:
-                out_f.write(json.dumps(obj) + "\n")
-            entities_total += 1
+    return rows
 
-        t1 = time.perf_counter()
-        per_note_times.append(t1 - t0)
 
-    # Bundle to enriched/part-000.jsonl
-    enriched_path = os.path.join(ENRICHED_DIR, "part-000.jsonl")
-    with open(enriched_path, "w", encoding="utf-8") as out_f:
-        for np in note_paths:
-            nid = os.path.splitext(os.path.basename(np))[0]
-            src = os.path.join(ENTITIES_DIR, f"{nid}.jsonl")
-            if os.path.exists(src):
-                with open(src, "r", encoding="utf-8") as sf:
-                    for line in sf:
-                        if line.strip():
-                            out_f.write(line)
+def write_entities(rows: Iterable[Dict], sink: Path) -> int:
+    written = 0
+    with sink.open("a", encoding="utf-8") as fh:
+        for row in rows:
+            ensure_contract(row)
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+            written += 1
+    return written
 
-    # Update manifest with fresh p50/p95
-    ts_finished = utc_now_iso()
-    manifest = {
-        "run_id": "LOCAL",
-        "ts_started": ts_started,
-        "ts_finished": ts_finished,
-        "notes_total": notes_seen,
-        "entities_total": entities_total,
-        "duration_ms_p50": median_ms(per_note_times),
-        "duration_ms_p95": quantile_ms(per_note_times, 0.95),
-        "errors": 0,
+
+def update_manifest(processed_notes: int, p50: float, p95: float) -> None:
+    record = {
+        "run_id": RUN_ID,
+        "p50_ms": p50,
+        "p95_ms": p95,
+        "error_rate": 0.0,
+        "processed_notes": processed_notes,
+        "ts": utc_iso(),
     }
-    with open(RUN_MANIFEST_PATH, "w", encoding="utf-8") as mf:
-        json.dump(manifest, mf, indent=2)
 
-    print(f"Rule extract OK ✅  notes={notes_seen}  entities={entities_total}")
-    print(f"enriched: {enriched_path}")
-    print(f"manifest: {RUN_MANIFEST_PATH}")
+    RUN_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    manifest: List[Dict] = []
+
+    if RUN_MANIFEST_PATH.exists():
+        try:
+            with RUN_MANIFEST_PATH.open("r", encoding="utf-8") as fh:
+                existing = json.load(fh)
+            if isinstance(existing, list):
+                manifest = [r for r in existing if str(r.get("run_id")) != str(RUN_ID)]
+        except Exception:
+            manifest = []
+
+    manifest.append(record)
+    with RUN_MANIFEST_PATH.open("w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=2)
+
+
+def main() -> None:
+    ENRICHED_DIR.mkdir(parents=True, exist_ok=True)
+    out_file = ENRICHED_DIR / "entities_local.jsonl"
+    out_file.write_text("", encoding="utf-8")
+
+    per_note_durations: List[float] = []
+    notes_seen = 0
+    entities_written = 0
+
+    for note in load_notes():
+        start = time.perf_counter()
+        rows = extract_for_note(note)
+        if rows:
+            entities_written += write_entities(rows, out_file)
+        notes_seen += 1 if note.get("note_id") else 0
+        per_note_durations.append(time.perf_counter() - start)
+
+    p50 = median_ms(per_note_durations)
+    p95 = quantile_ms(per_note_durations, 0.95)
+    update_manifest(notes_seen, p50, p95)
+
+    print(f"[rule_extract] notes={notes_seen} entities={entities_written} → {out_file}")
+    print(f"[rule_extract] manifest → {RUN_MANIFEST_PATH}")
 
 
 if __name__ == "__main__":
