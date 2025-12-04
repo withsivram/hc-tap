@@ -2,7 +2,7 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack eval-report
+	curation-pack eval-report gold-promote
 
 docker-up:
 	docker-compose up --build
@@ -92,6 +92,11 @@ gold-sync:
 gold-bootstrap:
 	python scripts/bootstrap_gold_from_preds.py
 
+gold-promote:
+	python scripts/promote_draft_gold.py
+	$(MAKE) gold-sync
+	$(MAKE) eval
+
 curation-pack:
 	python scripts/curation_pack.py
 
@@ -124,6 +129,7 @@ help:
 	@printf "  %-15s %s\n" "judge" "Run the LLM judge evaluation script."
 	@printf "  %-15s %s\n" "gold-sync" "Realign gold spans to normalized notes."
 	@printf "  %-15s %s\n" "gold-bootstrap" "Draft gold labels from LOCAL predictions."
+	@printf "  %-15s %s\n" "gold-promote" "Promote curated/bootstrap labels into gold_LOCAL."
 	@printf "  %-15s %s\n" "curation-pack" "Generate markdown packs for reviewing draft labels."
 	@printf "  %-15s %s\n" "bootstrap" "Install dependencies and pre-commit hooks."
 	@printf "  %-15s %s\n" "format" "Run black + isort formatters."
