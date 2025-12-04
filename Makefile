@@ -1,7 +1,7 @@
 .PHONY: docker-up docker-down docker-build docker-etl docker-logs \
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
-	bootstrap format lint gold-init clean help
+	bootstrap format lint gold-init clean help gold-sync gold-bootstrap
 
 docker-up:
 	docker-compose up --build
@@ -82,6 +82,12 @@ lint:
 gold-init:
 	python scripts/bootstrap_gold.py
 
+gold-sync:
+	python scripts/sync_gold_offsets.py
+
+gold-bootstrap:
+	python scripts/bootstrap_gold_from_preds.py
+
 clean:
 	rm -f fixtures/entities/*.jsonl
 	rm -rf fixtures/enriched/entities/run=LOCAL
@@ -108,6 +114,8 @@ help:
 	@printf "  %-15s %s\n" "etl-llm" "Run ETL using the LLM extractor."
 	@printf "  %-15s %s\n" "eval" "Evaluate LOCAL predictions vs. gold."
 	@printf "  %-15s %s\n" "judge" "Run the LLM judge evaluation script."
+	@printf "  %-15s %s\n" "gold-sync" "Realign gold spans to normalized notes."
+	@printf "  %-15s %s\n" "gold-bootstrap" "Draft gold labels from LOCAL predictions."
 	@printf "  %-15s %s\n" "bootstrap" "Install dependencies and pre-commit hooks."
 	@printf "  %-15s %s\n" "format" "Run black + isort formatters."
 	@printf "  %-15s %s\n" "lint" "Run Ruff lint checks."

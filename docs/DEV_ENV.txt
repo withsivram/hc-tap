@@ -11,3 +11,7 @@ To use LLM extraction:
   1. Set EXTRACTOR_LLM=openai (or anthropic) in .env
   2. Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) in .env
   3. Run: make etl-llm && make eval && make dash
+
+Gold maintenance:
+  - Run `make gold-sync` after changing preprocessing/normalization so stored spans stay aligned.
+  - Run `make gold-bootstrap` to draft candidate labels (gold/gold_DRAFT.jsonl) for notes not yet covered; promote manually, then re-run `make gold-sync`.
