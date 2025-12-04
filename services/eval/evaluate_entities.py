@@ -181,15 +181,20 @@ def persist_results(
         except Exception:
             manifest = {}
 
+    def block(result: Dict | None) -> Dict[str, float | None]:
+        if not result:
+            return {"micro_precision": None, "micro_recall": None, "micro_f1": None}
+        return {
+            "micro_precision": result.get("microP"),
+            "micro_recall": result.get("microR"),
+            "micro_f1": result.get("microF1"),
+        }
+
     metrics = {
-        "f1_exact_micro": strict_exact.get("microF1") if strict_exact else None,
-        "f1_relaxed_micro": strict_relaxed.get("microF1") if strict_relaxed else None,
-        "f1_exact_micro_intersection": (
-            inter_exact.get("microF1") if inter_exact else None
-        ),
-        "f1_relaxed_micro_intersection": (
-            inter_relaxed.get("microF1") if inter_relaxed else None
-        ),
+        "strict_exact": block(strict_exact),
+        "strict_relaxed": block(strict_relaxed),
+        "intersection_exact": block(inter_exact),
+        "intersection_relaxed": block(inter_relaxed),
         "coverage": coverage,
     }
 
@@ -198,11 +203,31 @@ def persist_results(
 
     if manifest.get("extractor") == extractor_name or not manifest.get("extractor"):
         manifest["extractor"] = extractor_name
-        manifest["f1_exact_micro"] = metrics["f1_exact_micro"]
-        manifest["f1_relaxed_micro"] = metrics["f1_relaxed_micro"]
-        manifest["f1_exact_micro_intersection"] = metrics["f1_exact_micro_intersection"]
-        manifest["f1_relaxed_micro_intersection"] = metrics[
-            "f1_relaxed_micro_intersection"
+        manifest["f1_exact_micro"] = metrics["strict_exact"]["micro_f1"]
+        manifest["f1_relaxed_micro"] = metrics["strict_relaxed"]["micro_f1"]
+        manifest["f1_exact_micro_intersection"] = metrics["intersection_exact"][
+            "micro_f1"
+        ]
+        manifest["f1_relaxed_micro_intersection"] = metrics["intersection_relaxed"][
+            "micro_f1"
+        ]
+        manifest["precision_exact_micro"] = metrics["strict_exact"]["micro_precision"]
+        manifest["recall_exact_micro"] = metrics["strict_exact"]["micro_recall"]
+        manifest["precision_relaxed_micro"] = metrics["strict_relaxed"][
+            "micro_precision"
+        ]
+        manifest["recall_relaxed_micro"] = metrics["strict_relaxed"]["micro_recall"]
+        manifest["precision_exact_micro_intersection"] = metrics["intersection_exact"][
+            "micro_precision"
+        ]
+        manifest["recall_exact_micro_intersection"] = metrics["intersection_exact"][
+            "micro_recall"
+        ]
+        manifest["precision_relaxed_micro_intersection"] = metrics[
+            "intersection_relaxed"
+        ]["micro_precision"]
+        manifest["recall_relaxed_micro_intersection"] = metrics["intersection_relaxed"][
+            "micro_recall"
         ]
         for key, value in coverage.items():
             manifest[f"coverage_{key}"] = value
@@ -327,6 +352,14 @@ def main() -> None:
     inter_exact_per, inter_exact_agg = evaluate(inter_golds, inter_preds, relaxed=False)
     inter_relax_per, inter_relax_agg = evaluate(inter_golds, inter_preds, relaxed=True)
 
+    def log_micro(label: str, agg: Dict[str, float]):
+        log(
+            f"{label}: P={format_pct(agg['microP'])} "
+            f"R={format_pct(agg['microR'])} "
+            f"F1={format_pct(agg['microF1'])}",
+            debug=False,
+        )
+
     log("=== STRICT (exact spans) ===", debug=False)
     for entity_type in TYPES:
         row = strict_exact_per[entity_type]
@@ -335,16 +368,10 @@ def main() -> None:
             f"P={format_pct(row['P'])} R={format_pct(row['R'])} F1={format_pct(row['F1'])}",
             debug=False,
         )
-    log(f"MICRO F1 (exact) = {format_pct(strict_exact_agg['microF1'])}", debug=False)
-    log(f"MICRO F1 (relaxed) = {format_pct(strict_relax_agg['microF1'])}", debug=False)
-    log(
-        f"INTERSECTION MICRO F1 (exact) = {format_pct(inter_exact_agg['microF1'])}",
-        debug=False,
-    )
-    log(
-        f"INTERSECTION MICRO F1 (relaxed) = {format_pct(inter_relax_agg['microF1'])}",
-        debug=False,
-    )
+    log_micro("MICRO (exact)", strict_exact_agg)
+    log_micro("MICRO (relaxed)", strict_relax_agg)
+    log_micro("INTERSECTION MICRO (exact)", inter_exact_agg)
+    log_micro("INTERSECTION MICRO (relaxed)", inter_relax_agg)
 
     metrics = {
         "strict_exact": strict_exact_agg,
