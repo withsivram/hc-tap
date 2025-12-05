@@ -17,7 +17,7 @@
 - **Workflow:** `.github/workflows/deploy.yml`
 - **Actions:**
     1. Create ECR Repositories (if missing)
-    2. Build Docker Images (API, Dashboard)
+    2. Build Docker Images (API, Dashboard, ETL)
     3. Push to ECR
     4. Deploy CDK Stack (`infra/`)
 
@@ -50,9 +50,39 @@ SERVICE=$(aws ecs list-services --cluster $CLUSTER --query "serviceArns[?contain
 aws ecs update-service --cluster $CLUSTER --service $SERVICE --force-new-deployment
 ```
 
-## Data Sync
-To populate S3 buckets with local fixture data:
+## Data Operations
+
+### Sync Data
+To populate S3 raw bucket with local fixture data:
 ```bash
 python3 scripts/sync_to_s3.py
 ```
 
+### Run Cloud ETL
+To trigger an ETL run on the cloud (processing raw notes from S3 -> enriched S3):
+
+**Option 1: GitHub Actions (Recommended)**
+1. Go to "Actions" tab in GitHub.
+2. Select **"Run Cloud ETL"** workflow.
+3. Click **"Run workflow"**.
+
+**Option 2: AWS CLI / CloudShell**
+```bash
+# Find Cluster and Task Def
+CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'HcTapStack')]" --output text)
+TASK_DEF=$(aws ecs list-task-definitions --family-prefix HcTapStackEtlTaskDef --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
+
+# Get Network Config from existing service (e.g. API)
+API_SERVICE=$(aws ecs list-services --cluster $CLUSTER --query "serviceArns[?contains(@, 'ApiService')]" --output text)
+NET_CONF=$(aws ecs describe-services --cluster $CLUSTER --services $API_SERVICE --query "services[0].networkConfiguration" --output json)
+SUBNETS=$(echo $NET_CONF | jq -r '.awsvpcConfiguration.subnets | join(",")')
+SGS=$(echo $NET_CONF | jq -r '.awsvpcConfiguration.securityGroups | join(",")')
+
+# Run Task
+aws ecs run-task \
+  --cluster $CLUSTER \
+  --task-definition $TASK_DEF \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SGS],assignPublicIp=ENABLED}" \
+  --overrides "{\"containerOverrides\":[{\"name\":\"EtlContainer\",\"command\":[\"python\",\"services/etl/etl_cloud.py\"]}]}"
+```

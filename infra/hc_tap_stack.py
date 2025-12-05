@@ -107,3 +107,29 @@ class HcTapStack(Stack):
         self.enriched_bucket.grant_read(
             self.dashboard_service.task_definition.task_role
         )
+
+        # 7. ETL Task Definition (Fargate)
+        # This is not a Service (doesn't run continuously), but a Task Definition
+        # that we can run on-demand via GitHub Actions or AWS CLI.
+        self.etl_task_def = ecs.FargateTaskDefinition(
+            self,
+            "EtlTaskDef",
+            cpu=512,
+            memory_limit_mib=1024,  # Give ETL a bit more juice
+        )
+
+        self.etl_container = self.etl_task_def.add_container(
+            "EtlContainer",
+            image=ecs.ContainerImage.from_ecr_repository(self.etl_repo, "latest-dev"),
+            logging=ecs.LogDriver.aws_logs(stream_prefix="HcTapEtl"),
+            environment={
+                "RAW_BUCKET": self.raw_bucket.bucket_name,
+                "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
+                "HC_TAP_ENV": "cloud",
+                "RUN_ID": "cloud-manual", # Default, can be overridden
+            },
+        )
+
+        # Grant permissions
+        self.raw_bucket.grant_read(self.etl_task_def.task_role)
+        self.enriched_bucket.grant_read_write(self.etl_task_def.task_role)

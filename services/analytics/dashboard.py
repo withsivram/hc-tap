@@ -19,6 +19,16 @@ def log(message: str) -> None:
 
 @st.cache_data(ttl=3)
 def load_manifest(path: str):
+    # If API_URL is set and looks like cloud (not localhost), try API first
+    if API_URL and "localhost" not in API_URL:
+        try:
+            resp = requests.get(f"{API_URL}/stats/latest", timeout=2)
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception:
+            pass
+
+    # Fallback to local file
     p = Path(path)
     if not p.exists():
         return None
@@ -28,6 +38,7 @@ def load_manifest(path: str):
 
 @st.cache_data(ttl=3)
 def load_entities(path: str):
+    # TODO: Fetch entities from API/S3 in future
     rows = []
     p = Path(path)
     if not p.exists():
@@ -69,7 +80,7 @@ if st.button("Reload Data"):
 manifest = load_manifest(str(RUN_MANIFEST))
 if not manifest:
     st.warning(
-        f"Manifest not found at {RUN_MANIFEST}. KPIs will be unavailable. Run `make etl-local` then `make eval` to generate stats, or verify 'Live Demo'."
+        f"Manifest not found at {RUN_MANIFEST} or API. KPIs will be unavailable. Run `make etl-local` then `make eval` to generate stats, or verify 'Live Demo'."
     )
     manifest = {}  # Provide empty dict to prevent AttributeError
 
@@ -84,24 +95,28 @@ selected_extractor = st.selectbox(
 )
 metrics = metrics_map.get(selected_extractor, {})
 if not metrics:
-    metrics = {
-        "f1_exact_micro": manifest.get("f1_exact_micro"),
-        "f1_relaxed_micro": manifest.get("f1_relaxed_micro"),
-        "f1_exact_micro_intersection": manifest.get("f1_exact_micro_intersection"),
-        "f1_relaxed_micro_intersection": manifest.get("f1_relaxed_micro_intersection"),
-        "coverage": {
-            "gold_outside_pred_notes": manifest.get(
-                "coverage_gold_outside_pred_notes", 0
-            ),
-        },
-    }
+    # If structure is flat (cloud stats), map directly
+    if "f1_exact_micro" in manifest:
+        metrics = manifest
+    else:
+        metrics = {
+            "f1_exact_micro": manifest.get("f1_exact_micro"),
+            "f1_relaxed_micro": manifest.get("f1_relaxed_micro"),
+            "f1_exact_micro_intersection": manifest.get("f1_exact_micro_intersection"),
+            "f1_relaxed_micro_intersection": manifest.get("f1_relaxed_micro_intersection"),
+            "coverage": {
+                "gold_outside_pred_notes": manifest.get(
+                    "coverage_gold_outside_pred_notes", 0
+                ),
+            },
+        }
 
 enriched_path = Path(
     f"fixtures/enriched/entities/run={selected_extractor}/part-000.jsonl"
 )
 entities_df = load_entities(str(enriched_path))
 
-st.caption(f"Manifest: {RUN_MANIFEST} | Enriched: {enriched_path}")
+st.caption(f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Enriched: {enriched_path}")
 
 tab_kpi, tab_demo = st.tabs(["KPIs", "Live Demo"])
 
@@ -113,7 +128,7 @@ with tab_kpi:
     row2 = st.columns(2)
     row2[0].metric(
         "Unique Notes",
-        int(entities_df["note_id"].nunique()) if not entities_df.empty else 0,
+        manifest.get("note_count", 0),
     )
     row2[1].metric("Errors", int(manifest.get("errors", 0)))
 

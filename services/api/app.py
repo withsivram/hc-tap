@@ -1,6 +1,7 @@
 import json
 import os
 
+import boto3
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ APP_RUN_ID = settings.APP_RUN_ID
 NOTES_DIR = settings.NOTES_DIR
 ENRICHED_FILE = f"{settings.ENRICHED_DIR}/run={APP_RUN_ID}/part-000.jsonl"
 RUN_MANIFEST = settings.RUN_MANIFEST
+ENRICHED_BUCKET = os.getenv("ENRICHED_BUCKET")
 
 app = FastAPI(title="HC-TAP API", version="1.0.0")
 
@@ -34,6 +36,7 @@ def config():
         "NOTES_DIR": NOTES_DIR,
         "ENRICHED_FILE": ENRICHED_FILE,
         "RUN_MANIFEST": RUN_MANIFEST,
+        "ENRICHED_BUCKET": ENRICHED_BUCKET,
     }
 
 
@@ -141,6 +144,30 @@ def get_run_stats(run_id: str):
         "f1_relaxed_micro": manifest.get("f1_relaxed_micro"),
         "ts": manifest.get("ts", manifest.get("ts_finished")),
     }
+
+
+@app.get("/stats/latest")
+def get_latest_stats():
+    """Fetch latest run stats from S3 if configured, else local."""
+    if ENRICHED_BUCKET:
+        s3 = boto3.client("s3")
+        try:
+            resp = s3.get_object(Bucket=ENRICHED_BUCKET, Key="runs/latest.json")
+            data = json.loads(resp["Body"].read().decode("utf-8"))
+            return data
+        except s3.exceptions.NoSuchKey:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "not_found", "message": "No cloud run found"},
+            )
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "s3_error", "message": str(e)},
+            )
+    
+    # Fallback to local for non-cloud envs
+    return get_run_stats("LOCAL")
 
 
 @app.get("/search")

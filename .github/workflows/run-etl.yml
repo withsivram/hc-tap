@@ -1,0 +1,68 @@
+name: Run Cloud ETL
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "099200121087"
+  AWS_ROLE_ARN: arn:aws:iam::099200121087:role/hc-tap-github-deploy-role
+  CLUSTER_NAME: HcTapStack-HcTapCluster7E2888D7-HmpLjPKHNhuc
+  TASK_DEF_FAMILY: EtlTaskDef # Check exact name in AWS Console if unsure, usually "HcTapStackEtlTaskDef..."
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run ETL Task
+        run: |
+          # Find the exact Task Definition ARN family
+          TASK_DEF=$(aws ecs list-task-definitions --family-prefix HcTapStackEtlTaskDef --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
+          
+          # Find Cluster (dynamic lookup to be safe)
+          CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'HcTapStack')]" --output text)
+          
+          echo "Running ETL on Cluster: $CLUSTER"
+          echo "Task Def: $TASK_DEF"
+          
+          # Get Subnets and Security Groups dynamically from the cluster's existing service
+          # (Assumes ApiService uses the same VPC/Subnets)
+          SERVICE_ARN=$(aws ecs list-services --cluster $CLUSTER --max-items 1 --query "serviceArns[0]" --output text)
+          NET_CONF=$(aws ecs describe-services --cluster $CLUSTER --services $SERVICE_ARN --query "services[0].networkConfiguration" --output json)
+          
+          # Parse JSON to string for run-task (requires jq)
+          SUBNETS=$(echo $NET_CONF | jq -r '.awsvpcConfiguration.subnets | join(",")')
+          SGS=$(echo $NET_CONF | jq -r '.awsvpcConfiguration.securityGroups | join(",")')
+          
+          echo "Subnets: $SUBNETS"
+          echo "SGs: $SGS"
+          
+          # Run Task
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $CLUSTER \
+            --task-definition $TASK_DEF \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SGS],assignPublicIp=ENABLED}" \
+            --overrides "{\"containerOverrides\":[{\"name\":\"EtlContainer\",\"command\":[\"python\",\"services/etl/etl_cloud.py\"]}]}" \
+            --query "tasks[0].taskArn" \
+            --output text)
+            # Note: Subnets/SGs hardcoded above are risky. Better to query them or output from CDK stack.
+            # For robust automation, we should fetch subnets via CLI.
+          
+          echo "Task Started: $TASK_ARN"
+          
+          # Wait for task to stop
+          aws ecs wait tasks-stopped --cluster $CLUSTER --tasks $TASK_ARN
+          
+          echo "ETL Task Completed."
+
