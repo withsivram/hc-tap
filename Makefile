@@ -2,7 +2,8 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack eval-report gold-promote etl-gold etl-strict
+	curation-pack eval-report gold-promote etl-gold etl-strict etl-strict-lite \
+	compare
 
 docker-up:
 	docker-compose up --build
@@ -29,7 +30,7 @@ api-stub:
 	python -m uvicorn services.api.app:app --reload --port 8000
 
 dash:
-	streamlit run services/analytics/streamlit_app.py
+	streamlit run services/analytics/dashboard.py
 
 extract-local:
 	python services/etl/rule_extract.py
@@ -56,8 +57,8 @@ etl-local: validate
 etl-gold: validate
 	NOTE_FILTER=gold python services/etl/etl_local.py
 
-etl-strict: validate
-	RULES_PROFILE=strict python services/etl/etl_local.py
+etl-strict-lite: validate
+	RULES_PROFILE=strict-lite python services/etl/etl_local.py
 
 etl-spacy:
 	EXTRACTOR=spacy python services/etl/etl_local.py
@@ -102,6 +103,17 @@ gold-promote:
 	python scripts/promote_draft_gold.py
 	$(MAKE) gold-sync
 	$(MAKE) eval
+
+compare:
+	@echo "--- Comparing Profiles on GOLD subset ---"
+	@NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null
+	@python services/eval/evaluate_entities.py
+	@echo "\n[STRICT]"
+	@RULES_PROFILE=strict NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null
+	@python services/eval/evaluate_entities.py
+	@echo "\n[STRICT-LITE]"
+	@RULES_PROFILE=strict-lite NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null
+	@python services/eval/evaluate_entities.py
 
 curation-pack:
 	python scripts/curation_pack.py

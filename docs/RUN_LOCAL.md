@@ -1,15 +1,32 @@
-# Run locally (stubs, no AWS)
+# Run locally (Docker or venv)
 
-## First time
+## Docker (Recommended)
+```bash
+make docker-up
+```
+This starts the API (port 8000) and Dashboard (port 8501).
+
+## Manual (venv)
+
+### First time
+```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+make bootstrap
+```
 
-## Generate enriched data & manifest
-make etl-stub
+### Generate Data
+```bash
+make etl-local
+```
 
-## API stub (optional)
-make api-stub    # open http://127.0.0.1:8000/docs
+### Run Services
+```bash
+# Terminal 1: API
+make api-stub
 
-## Dashboard
-make dash        # open http://localhost:8501
+# Terminal 2: Dashboard
+make dash
+```
+

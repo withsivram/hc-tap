@@ -13,6 +13,9 @@ from typing import Dict, Iterable, Iterator, List, Tuple
 from services.etl.sections import detect_sections, in_section
 
 PROFILE = os.getenv("RULES_PROFILE", "default").lower()
+PROFILE_STRICT = PROFILE == "strict"
+PROFILE_STRICT_LITE = PROFILE == "strict-lite"
+PROFILE_STRICTISH = PROFILE_STRICT or PROFILE_STRICT_LITE
 HC_DEBUG = os.getenv("HC_TAP_DEBUG", "0") == "1"
 RUN_ID = os.getenv("RUN_ID", "LOCAL")
 NOTES_DIR = Path("fixtures/notes")
@@ -332,7 +335,7 @@ def should_keep_med(
     has_suffix_match = norm in MEDICATION_TERMS or has_suffix(norm)
     has_dose = has_dose_context(text, begin, end)
     section = (section_name or "unknown").lower()
-    if PROFILE == "strict":
+    if PROFILE_STRICTISH:
         in_preferred_section = section in MED_SECTIONS or section in ASSESS_SECTIONS
         if not in_preferred_section and not has_dose and not has_suffix_match:
             return False
@@ -360,17 +363,34 @@ def should_keep_problem(
     if "family history" in window or "history of" in window:
         return False
     section = (section_name or "unknown").lower()
-    if PROFILE == "strict":
+    lacks_context = not has_context_keyword(text, begin, end)
+    if PROFILE_STRICT:
         if history_cutoff != -1 and begin > history_cutoff:
             return False
-        if section in HISTORY_SECTIONS and not has_context_keyword(text, begin, end):
+        if section in HISTORY_SECTIONS and lacks_context:
             return False
-        if section in ROS_SECTIONS and not has_context_keyword(text, begin, end):
+        if section in ROS_SECTIONS and lacks_context:
             return False
-        if section in HPI_SECTIONS and not has_context_keyword(text, begin, end):
+        if section in HPI_SECTIONS and lacks_context:
             return False
-    if not has_context_keyword(text, begin, end) and section not in ASSESS_SECTIONS:
-        if PROFILE == "strict":
+    elif PROFILE_STRICT_LITE:
+        if history_cutoff != -1 and begin > history_cutoff and norm not in HIGH_CONF_PROBLEMS:
+            return False
+        if (
+            section in HISTORY_SECTIONS
+            and lacks_context
+            and norm not in HIGH_CONF_PROBLEMS
+            and not looks_clinical(norm)
+        ):
+            return False
+        if (
+            section in ROS_SECTIONS
+            and lacks_context
+            and norm in ROS_GENERIC_SUPPRESS
+        ):
+            return False
+    if lacks_context and section not in ASSESS_SECTIONS:
+        if PROFILE_STRICT:
             return False
         if norm not in HIGH_CONF_PROBLEMS and not looks_clinical(norm):
             return False
@@ -395,20 +415,20 @@ def extract_for_note(note: Dict) -> List[Dict]:
     history_cut = compute_history_cutoff(text)
     sections = detect_sections(text)
     tokens = tokenize(text)
-    debug_counts = defaultdict(int) if PROFILE == "strict" and HC_DEBUG else None
+    debug_counts = defaultdict(int) if PROFILE_STRICT and HC_DEBUG else None
 
     for begin, end, span, norm in find_spans(text, PROBLEM_TERMS, with_dose=False):
         if begin >= end:
             continue
         norm_clean = norm.strip().lower()
         section = section_for_span(sections, text, begin)
-        if PROFILE == "strict" and debug_counts is not None:
+        if PROFILE_STRICT and debug_counts is not None:
             debug_counts[f"problem_candidates_{section}"] += 1
+        positive_context = has_positive_context(tokens, begin, end) or (
+            section in ASSESS_SECTIONS
+        )
         suppress = False
-        if PROFILE == "strict":
-            positive_context = has_positive_context(tokens, begin, end) or (
-                section in ASSESS_SECTIONS
-            )
+        if PROFILE_STRICT:
             if in_section(begin, end, sections, ROS_SECTIONS) and not positive_context:
                 if debug_counts is not None:
                     debug_counts["suppressed_by_ros"] += 1
@@ -428,8 +448,15 @@ def extract_for_note(note: Dict) -> List[Dict]:
                 if debug_counts is not None:
                     debug_counts["suppressed_ros_generic"] += 1
                 suppress = True
-            if suppress:
-                continue
+        elif PROFILE_STRICT_LITE:
+            if (
+                norm_clean in ROS_GENERIC_SUPPRESS
+                and in_section(begin, end, sections, ROS_SECTIONS)
+                and not positive_context
+            ):
+                suppress = True
+        if suppress:
+            continue
         if not should_keep_problem(
             span, norm_clean, text, begin, end, section, history_cut
         ):
@@ -457,7 +484,7 @@ def extract_for_note(note: Dict) -> List[Dict]:
             continue
         norm_clean = norm.strip().lower()
         section = section_for_span(sections, text, begin)
-        if PROFILE == "strict":
+        if PROFILE_STRICTISH:
             dose_ok = has_dose_tokens(tokens, begin, end)
             in_med = in_section(begin, end, sections, MED_SECTIONS)
             in_plan = in_section(begin, end, sections, {"plan"})
