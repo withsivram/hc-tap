@@ -17,6 +17,11 @@ RUN_MANIFEST = settings.RUN_MANIFEST
 app = FastAPI(title="HC-TAP API", version="1.0.0")
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "hc-tap-api"}
+
+
 @app.get("/health")
 def health():
     return {"ok": True}
