@@ -1,13 +1,13 @@
 {
   "run_id": "LOCAL",
-  "ts_started": "2025-12-05T00:19:18Z",
-  "ts_finished": "2025-12-05T00:19:24Z",
-  "note_count": 4966,
-  "entity_count": 5421,
+  "ts_started": "2025-12-05T01:03:04Z",
+  "ts_finished": "2025-12-05T01:03:04Z",
+  "note_count": 34,
+  "entity_count": 51,
   "duration_ms_p50": 1,
   "duration_ms_p95": 2,
   "errors": 0,
-  "ts": "2025-12-05T00:19:24Z",
+  "ts": "2025-12-05T01:03:04Z",
   "f1_exact_micro": 0.0,
   "f1_relaxed_micro": 0.0,
   "f1_exact_micro_intersection": 0.0,
@@ -47,28 +47,28 @@
     },
     "local": {
       "strict_exact": {
-        "micro_precision": 0.42857142857142855,
-        "micro_recall": 0.375,
-        "micro_f1": 0.39999999999999997
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.39285714285714285,
+        "micro_f1": 0.4112149532710281
       },
       "strict_relaxed": {
-        "micro_precision": 0.42857142857142855,
-        "micro_recall": 0.375,
-        "micro_f1": 0.39999999999999997
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.39285714285714285,
+        "micro_f1": 0.4112149532710281
       },
       "intersection_exact": {
-        "micro_precision": 0.42857142857142855,
-        "micro_recall": 0.5526315789473685,
-        "micro_f1": 0.4827586206896552
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.5789473684210527,
+        "micro_f1": 0.4943820224719101
       },
       "intersection_relaxed": {
-        "micro_precision": 0.42857142857142855,
-        "micro_recall": 0.5526315789473685,
-        "micro_f1": 0.4827586206896552
+        "micro_precision": 0.43137254901960786,
+        "micro_recall": 0.5789473684210527,
+        "micro_f1": 0.4943820224719101
       },
       "coverage": {
         "gold_items": 56,
-        "pred_items": 49,
+        "pred_items": 51,
         "gold_notes": 34,
         "pred_notes": 24,
         "gold_outside_pred_notes": 10
