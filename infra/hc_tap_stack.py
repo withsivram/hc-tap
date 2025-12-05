@@ -16,25 +16,18 @@ class HcTapStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # 1. ECR Repositories
-        self.api_repo = ecr.Repository(
-            self, "ApiRepo",
-            repository_name="hc-tap/api",
-            removal_policy=RemovalPolicy.DESTROY,
-            empty_on_delete=True
+        # We reference existing repositories since we pre-provision them in the GitHub workflow
+        # to avoid the "chicken-and-egg" problem of ECS Service waiting for an image.
+        self.api_repo = ecr.Repository.from_repository_name(
+            self, "ApiRepo", "hc-tap/api"
         )
 
-        self.dashboard_repo = ecr.Repository(
-            self, "DashboardRepo",
-            repository_name="hc-tap/dashboard",
-            removal_policy=RemovalPolicy.DESTROY,
-            empty_on_delete=True
+        self.dashboard_repo = ecr.Repository.from_repository_name(
+            self, "DashboardRepo", "hc-tap/dashboard"
         )
 
-        self.etl_repo = ecr.Repository(
-            self, "EtlRepo",
-            repository_name="hc-tap/etl",
-            removal_policy=RemovalPolicy.DESTROY,
-            empty_on_delete=True
+        self.etl_repo = ecr.Repository.from_repository_name(
+            self, "EtlRepo", "hc-tap/etl"
         )
 
         # 2. S3 Buckets

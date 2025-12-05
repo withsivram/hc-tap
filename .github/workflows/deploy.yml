@@ -35,23 +35,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # We need to bootstrap the ECR repos first if they don't exist?
-      # CDK deploy creates them. But we can't push if they don't exist.
-      # Chicken and egg.
-      # Solution: Run CDK deploy (infrastructure only) -> Push Images -> Update Services?
-      # Or simpler: Run CDK deploy first. It will create Repos. It might fail to start Tasks if images missing.
-      # That's acceptable for first run.
-      
-      - name: Install CDK and Python deps
+      # FIX: Create ECR repos explicitly before building/pushing
+      # This ensures we can push images BEFORE running CDK deploy
+      # (which launches ECS services that depend on these images)
+      - name: Ensure ECR Repos Exist
         run: |
-          npm install -g aws-cdk
-          python -m pip install -r infra/requirements.txt
-
-      - name: Deploy Infrastructure (CDK)
-        run: |
-          cd infra
-          cdk deploy --require-approval never
-        # This ensures ECR repos exist.
+          aws ecr describe-repositories --repository-names hc-tap/api || aws ecr create-repository --repository-name hc-tap/api
+          aws ecr describe-repositories --repository-names hc-tap/dashboard || aws ecr create-repository --repository-name hc-tap/dashboard
+          aws ecr describe-repositories --repository-names hc-tap/etl || aws ecr create-repository --repository-name hc-tap/etl
 
       - name: Build and push API
         uses: docker/build-push-action@v5
@@ -75,6 +66,12 @@ jobs:
             ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:latest-dev
 
-      # Optional: Force new deployment of ECS services to pick up new images if tags didn't change (latest-dev)
-      # But since we just ran cdk deploy, it might not have updated the service if the image URI string didn't change.
-      # We'll leave it as is for now.
+      - name: Install CDK and Python deps
+        run: |
+          npm install -g aws-cdk
+          python -m pip install -r infra/requirements.txt
+
+      - name: Deploy Infrastructure (CDK)
+        run: |
+          cd infra
+          cdk deploy --require-approval never
