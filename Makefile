@@ -2,8 +2,7 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack eval-report gold-promote etl-gold etl-strict etl-strict-lite \
-	compare
+	curation-pack eval-report gold-promote etl-gold etl-strict-lite
 
 docker-up:
 	docker-compose up --build
@@ -60,6 +59,17 @@ etl-gold: validate
 etl-strict-lite: validate
 	RULES_PROFILE=strict-lite python services/etl/etl_local.py
 
+compare:
+	@echo "=== DEFAULT PROFILE (Gold Subset) ==="
+	@NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null 2>&1
+	@python services/eval/evaluate_entities.py
+	@echo "\n=== STRICT PROFILE (Gold Subset) ==="
+	@RULES_PROFILE=strict NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null 2>&1
+	@python services/eval/evaluate_entities.py
+	@echo "\n=== STRICT-LITE PROFILE (Gold Subset) ==="
+	@RULES_PROFILE=strict-lite NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null 2>&1
+	@python services/eval/evaluate_entities.py
+
 etl-spacy:
 	EXTRACTOR=spacy python services/etl/etl_local.py
 
@@ -105,9 +115,9 @@ gold-promote:
 	$(MAKE) eval
 
 compare:
-	@echo "--- Comparing Profiles on GOLD subset ---"
-	@NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null
-	@python services/eval/evaluate_entities.py
+	@echo "--- Comparing Profiles on GOLD Subset ---"
+	@$(MAKE) etl-gold
+	@$(MAKE) eval
 	@echo "\n[STRICT]"
 	@RULES_PROFILE=strict NOTE_FILTER=gold python services/etl/etl_local.py > /dev/null
 	@python services/eval/evaluate_entities.py
@@ -141,7 +151,7 @@ help:
 	@printf "  %-15s %s\n" "validate" "Validate fixtures/notes via JSON schema."
 	@printf "  %-15s %s\n" "etl-local" "Run rule-based ETL (validates first)."
 	@printf "  %-15s %s\n" "etl-gold" "Run ETL only for notes present in gold."
-	@printf "  %-15s %s\n" "etl-strict" "Run ETL with RULES_PROFILE=strict for FP-cutting."
+	@printf "  %-15s %s\n" "etl-strict-lite" "Run ETL with RULES_PROFILE=strict-lite for FP-cutting."
 	@printf "  %-15s %s\n" "etl-spacy" "Run ETL using the spaCy extractor."
 	@printf "  %-15s %s\n" "etl-llm" "Run ETL using the LLM extractor."
 	@printf "  %-15s %s\n" "eval" "Evaluate LOCAL predictions vs. gold."

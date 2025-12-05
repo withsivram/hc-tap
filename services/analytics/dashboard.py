@@ -8,7 +8,8 @@ import streamlit as st
 
 RUN_MANIFEST = Path("fixtures/runs_LOCAL.json")
 HC_DEBUG = os.getenv("HC_TAP_DEBUG", "0") == "1"
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_BASE = os.getenv("API_BASE")
+API_URL = API_BASE if API_BASE else os.getenv("API_URL", "http://localhost:8000")
 
 
 def log(message: str) -> None:
@@ -57,6 +58,9 @@ def badge(value):
 
 st.set_page_config(page_title="HC-TAP Dashboard", layout="wide")
 st.title("Healthcare Text Analytics — Phase-3 KPIs")
+
+if not API_BASE and not os.getenv("API_URL"):
+    st.warning("Cloud API URL not set, using default local URL")
 
 if st.button("Reload Data"):
     st.cache_data.clear()

@@ -1,0 +1,80 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_run:
+    workflows: ["Docker Build & Push"]
+    branches: [main]
+    types: 
+      - completed
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::099200121087:role/hc-tap-github-deploy-role
+  IMAGE_TAG: ${{ github.sha }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install CDK
+        run: npm install -g aws-cdk
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r infra/requirements.txt
+
+      - name: CDK Deploy
+        run: |
+          cd infra
+          cdk deploy --require-approval=never --outputs-file outputs.json
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Job Summary
+        if: success()
+        run: |
+          echo "## Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "### CloudFormation Outputs" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat infra/outputs.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          # Parse outputs for Smoke Test (using jq)
+          API_URL=$(jq -r '.HcTapStack.ApiAlbUrl' infra/outputs.json)
+          DASH_URL=$(jq -r '.HcTapStack.DashAlbUrl' infra/outputs.json)
+          
+          echo "- **API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard URL:** $DASH_URL" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          
+          echo "**Testing API Health...**" >> $GITHUB_STEP_SUMMARY
+          API_RESP=$(curl -fsSL "$API_URL/health" 2>&1 | head -c 200) || API_RESP="Failed to connect"
+          echo "\`$API_RESP\`" >> $GITHUB_STEP_SUMMARY
+          
+          echo "**Testing Dashboard...**" >> $GITHUB_STEP_SUMMARY
+          DASH_RESP=$(curl -fsSL "$DASH_URL" 2>&1 | head -c 200) || DASH_RESP="Failed to connect"
+          echo "\`$DASH_RESP\`" >> $GITHUB_STEP_SUMMARY
