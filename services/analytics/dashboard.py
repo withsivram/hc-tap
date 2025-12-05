@@ -191,19 +191,19 @@ with tab_kpi:
 with tab_demo:
     st.header("Live Extraction Demo")
     st.markdown(f"**API Endpoint:** `{API_URL}/extract`")
-    
+
     text_input = st.text_area(
-        "Enter clinical note text:", 
-        height=200, 
-        value="Patient presents with severe chest pain and nausea. Prescribed aspirin 81mg daily."
+        "Enter clinical note text:",
+        height=200,
+        value="Patient presents with severe chest pain and nausea. Prescribed aspirin 81mg daily.",
     )
-    
+
     if st.button("Extract Entities", type="primary"):
         with st.spinner("Extracting..."):
             try:
                 resp = requests.post(
-                    f"{API_URL}/extract", 
-                    json={"text": text_input, "note_id": "demo_web"}
+                    f"{API_URL}/extract",
+                    json={"text": text_input, "note_id": "demo_web"},
                 )
                 if resp.status_code == 200:
                     data = resp.json()

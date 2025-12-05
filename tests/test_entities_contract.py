@@ -1,8 +1,9 @@
-import os
-import json
 import glob
-import pytest
+import json
+import os
+
 import pandas as pd
+import pytest
 
 REQUIRED = {
     "note_id",

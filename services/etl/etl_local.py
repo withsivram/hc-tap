@@ -26,7 +26,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 
 from services.etl import rule_extract  # noqa: E402
-from services.etl.preprocess import normalize_entity_text, normalize_text  # noqa: E402
+from services.etl.preprocess import (normalize_entity_text,  # noqa: E402
+                                     normalize_text)
 
 RUN_ID = "LOCAL"
 EXTRACTOR_NAME = "rule"

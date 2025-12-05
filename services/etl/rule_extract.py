@@ -374,7 +374,11 @@ def should_keep_problem(
         if section in HPI_SECTIONS and lacks_context:
             return False
     elif PROFILE_STRICT_LITE:
-        if history_cutoff != -1 and begin > history_cutoff and norm not in HIGH_CONF_PROBLEMS:
+        if (
+            history_cutoff != -1
+            and begin > history_cutoff
+            and norm not in HIGH_CONF_PROBLEMS
+        ):
             return False
         if (
             section in HISTORY_SECTIONS
@@ -383,11 +387,7 @@ def should_keep_problem(
             and not looks_clinical(norm)
         ):
             return False
-        if (
-            section in ROS_SECTIONS
-            and lacks_context
-            and norm in ROS_GENERIC_SUPPRESS
-        ):
+        if section in ROS_SECTIONS and lacks_context and norm in ROS_GENERIC_SUPPRESS:
             return False
     if lacks_context and section not in ASSESS_SECTIONS:
         if PROFILE_STRICT:

@@ -21,7 +21,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 
-from services.etl.preprocess import normalize_entity_text, normalize_text  # noqa: E402
+from services.etl.preprocess import (normalize_entity_text,  # noqa: E402
+                                     normalize_text)
 
 CURATION_DIR = Path("docs/curation")
 DRAFT_PATH = Path("gold/gold_DRAFT.jsonl")

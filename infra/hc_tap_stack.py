@@ -1,14 +1,11 @@
-from aws_cdk import (
-    Duration,
-    Stack,
-    aws_ecr as ecr,
-    aws_s3 as s3,
-    aws_ec2 as ec2,
-    aws_ecs as ecs,
-    aws_ecs_patterns as ecs_patterns,
-    RemovalPolicy,
-)
+from aws_cdk import Duration, RemovalPolicy, Stack
+from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_ecr as ecr
+from aws_cdk import aws_ecs as ecs
+from aws_cdk import aws_ecs_patterns as ecs_patterns
+from aws_cdk import aws_s3 as s3
 from constructs import Construct
+
 
 class HcTapStack(Stack):
 
@@ -32,19 +29,21 @@ class HcTapStack(Stack):
 
         # 2. S3 Buckets
         self.raw_bucket = s3.Bucket(
-            self, "RawDataBucket",
-            bucket_name="hc-tap-raw-notes", # Suffix might be needed if taken
+            self,
+            "RawDataBucket",
+            bucket_name="hc-tap-raw-notes",  # Suffix might be needed if taken
             versioned=True,
             removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True
+            auto_delete_objects=True,
         )
 
         self.enriched_bucket = s3.Bucket(
-            self, "EnrichedDataBucket",
+            self,
+            "EnrichedDataBucket",
             bucket_name="hc-tap-enriched-entities",
             versioned=True,
             removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True
+            auto_delete_objects=True,
         )
 
         # 3. VPC
@@ -56,45 +55,55 @@ class HcTapStack(Stack):
         # 5. API Fargate Service
         # Using ApplicationLoadBalancedFargateService for easy ALB setup
         self.api_service = ecs_patterns.ApplicationLoadBalancedFargateService(
-            self, "ApiService",
+            self,
+            "ApiService",
             cluster=self.cluster,
             cpu=256,
             memory_limit_mib=512,
             desired_count=1,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_ecr_repository(self.api_repo, "latest-dev"),
+                image=ecs.ContainerImage.from_ecr_repository(
+                    self.api_repo, "latest-dev"
+                ),
                 container_port=8000,
                 environment={
                     "RAW_BUCKET": self.raw_bucket.bucket_name,
                     "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
-                    "HC_TAP_ENV": "cloud"
-                }
+                    "HC_TAP_ENV": "cloud",
+                },
             ),
-            public_load_balancer=True
+            public_load_balancer=True,
         )
-        
+
         # Grant permissions
         self.raw_bucket.grant_read_write(self.api_service.task_definition.task_role)
-        self.enriched_bucket.grant_read_write(self.api_service.task_definition.task_role)
+        self.enriched_bucket.grant_read_write(
+            self.api_service.task_definition.task_role
+        )
 
         # 6. Dashboard Fargate Service
         # Needs to know API URL
         self.dashboard_service = ecs_patterns.ApplicationLoadBalancedFargateService(
-            self, "DashboardService",
+            self,
+            "DashboardService",
             cluster=self.cluster,
             cpu=256,
             memory_limit_mib=512,
             desired_count=1,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_ecr_repository(self.dashboard_repo, "latest-dev"),
+                image=ecs.ContainerImage.from_ecr_repository(
+                    self.dashboard_repo, "latest-dev"
+                ),
                 container_port=8501,
                 environment={
                     "API_URL": f"http://{self.api_service.load_balancer.load_balancer_dns_name}",
-                    "HC_TAP_ENV": "cloud"
-                }
+                    "HC_TAP_ENV": "cloud",
+                },
             ),
-            public_load_balancer=True
+            public_load_balancer=True,
         )
-        
+
         # Grant permissions (Dashboard might read directly from S3 for some views, ideally goes via API)
-        self.enriched_bucket.grant_read(self.dashboard_service.task_definition.task_role)
+        self.enriched_bucket.grant_read(
+            self.dashboard_service.task_definition.task_role
+        )
