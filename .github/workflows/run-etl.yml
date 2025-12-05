@@ -26,14 +26,24 @@ jobs:
 
       - name: Run ETL Task
         run: |
-          # Find the exact Task Definition ARN family
-          TASK_DEF=$(aws ecs list-task-definitions --family-prefix HcTapStackEtlTaskDef --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
+          # Find the exact Task Definition ARN (broad search)
+          # List all families, find the one containing "EtlTaskDef", then get latest ARN
+          TASK_DEF_FAMILY=$(aws ecs list-task-definition-families --status ACTIVE --query "families[?contains(@, 'EtlTaskDef')]" --output text | head -n 1)
+          
+          if [ -z "$TASK_DEF_FAMILY" ]; then
+            echo "Error: Could not find EtlTaskDef family."
+            aws ecs list-task-definition-families --status ACTIVE
+            exit 1
+          fi
+          
+          TASK_DEF=$(aws ecs list-task-definitions --family-prefix $TASK_DEF_FAMILY --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
           
           # Find Cluster (dynamic lookup to be safe)
           CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'HcTapStack')]" --output text)
           
           echo "Running ETL on Cluster: $CLUSTER"
-          echo "Task Def: $TASK_DEF"
+          echo "Task Def Family: $TASK_DEF_FAMILY"
+          echo "Task Def ARN: $TASK_DEF"
           
           # Get Subnets and Security Groups dynamically from the cluster's existing service
           # (Assumes ApiService uses the same VPC/Subnets)
