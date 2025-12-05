@@ -68,10 +68,10 @@ if st.button("Reload Data"):
 
 manifest = load_manifest(str(RUN_MANIFEST))
 if not manifest:
-    st.error(
-        f"Manifest not found at {RUN_MANIFEST}. Run `make etl-local` then `make eval`."
+    st.warning(
+        f"Manifest not found at {RUN_MANIFEST}. KPIs will be unavailable. Run `make etl-local` then `make eval` to generate stats, or verify 'Live Demo'."
     )
-    st.stop()
+    manifest = {}  # Provide empty dict to prevent AttributeError
 
 metrics_map = manifest.get("extractor_metrics", {})
 current_extractor = manifest.get("extractor", "local")
