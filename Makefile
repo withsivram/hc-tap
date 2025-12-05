@@ -89,7 +89,7 @@ bootstrap:
 	python -m pip install --upgrade pip
 	pip install -r requirements.txt
 	[ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
-	python -m spacy download en_core_sci_sm || true
+	pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
 	pre-commit install
 	python scripts/check_env.py
 
