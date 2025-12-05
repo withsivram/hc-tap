@@ -9,6 +9,8 @@ env:
   AWS_ROLE_ARN: arn:aws:iam::099200121087:role/hc-tap-github-deploy-role
   CLUSTER_NAME: HcTapStack-HcTapCluster7E2888D7-HmpLjPKHNhuc
   TASK_DEF_FAMILY: EtlTaskDef # Check exact name in AWS Console if unsure, usually "HcTapStackEtlTaskDef..."
+  RAW_BUCKET_NAME: hc-tap-raw-notes
+  ENRICHED_BUCKET_NAME: hc-tap-enriched-entities
 
 permissions:
   id-token: write
