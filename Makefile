@@ -2,7 +2,8 @@
 	test etl-stub api-stub dash extract-local ingest download-data \
 	ingest-50 ingest-100 validate etl-local etl-spacy etl-llm eval judge \
 	bootstrap format lint gold-init clean help gold-sync gold-bootstrap \
-	curation-pack eval-report gold-promote etl-gold etl-strict-lite
+	curation-pack eval-report gold-promote etl-gold etl-strict etl-strict-lite \
+	compare sync-s3
 
 docker-up:
 	docker-compose up --build
@@ -128,6 +129,9 @@ compare:
 curation-pack:
 	python scripts/curation_pack.py
 
+sync-s3:
+	python scripts/sync_to_s3.py
+
 clean:
 	rm -f fixtures/entities/*.jsonl
 	rm -rf fixtures/enriched/entities/run=LOCAL
@@ -166,4 +170,5 @@ help:
 	@printf "  %-15s %s\n" "lint" "Run Ruff lint checks."
 	@printf "  %-15s %s\n" "gold-init" "Generate gold fixtures from notes."
 	@printf "  %-15s %s\n" "clean" "Remove local enriched entity artifacts."
+	@printf "  %-15s %s\n" "sync-s3" "Sync local notes to S3 raw bucket."
 	@printf "  %-15s %s\n" "help" "Show this command list."

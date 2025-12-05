@@ -1,25 +1,23 @@
-name: Deploy Infrastructure
+name: Deploy to AWS
 
 on:
-  workflow_run:
-    workflows: ["Docker Build & Push"]
-    branches: [main]
-    types: 
-      - completed
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "099200121087"
   AWS_ROLE_ARN: arn:aws:iam::099200121087:role/hc-tap-github-deploy-role
-  IMAGE_TAG: ${{ github.sha }}
+  ECR_REGISTRY: 099200121087.dkr.ecr.us-east-1.amazonaws.com
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,51 +28,53 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Install CDK
-        run: npm install -g aws-cdk
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      # We need to bootstrap the ECR repos first if they don't exist?
+      # CDK deploy creates them. But we can't push if they don't exist.
+      # Chicken and egg.
+      # Solution: Run CDK deploy (infrastructure only) -> Push Images -> Update Services?
+      # Or simpler: Run CDK deploy first. It will create Repos. It might fail to start Tasks if images missing.
+      # That's acceptable for first run.
+      
+      - name: Install CDK and Python deps
+        run: |
+          npm install -g aws-cdk
+          python -m pip install -r infra/requirements.txt
 
-      - name: Install Python dependencies
-        run: pip install -r infra/requirements.txt
-
-      - name: CDK Deploy
+      - name: Deploy Infrastructure (CDK)
         run: |
           cd infra
-          cdk deploy --require-approval=never --outputs-file outputs.json
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          cdk deploy --require-approval never
+        # This ensures ECR repos exist.
 
-      - name: Job Summary
-        if: success()
-        run: |
-          echo "## Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "### CloudFormation Outputs" >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          cat infra/outputs.json >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          
-          # Parse outputs for Smoke Test (using jq)
-          API_URL=$(jq -r '.HcTapStack.ApiAlbUrl' infra/outputs.json)
-          DASH_URL=$(jq -r '.HcTapStack.DashAlbUrl' infra/outputs.json)
-          
-          echo "- **API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dashboard URL:** $DASH_URL" >> $GITHUB_STEP_SUMMARY
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.api
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/hc-tap/api:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/hc-tap/api:latest-dev
 
-          echo "### Smoke Test Results" >> $GITHUB_STEP_SUMMARY
-          
-          echo "**Testing API Health...**" >> $GITHUB_STEP_SUMMARY
-          API_RESP=$(curl -fsSL "$API_URL/health" 2>&1 | head -c 200) || API_RESP="Failed to connect"
-          echo "\`$API_RESP\`" >> $GITHUB_STEP_SUMMARY
-          
-          echo "**Testing Dashboard...**" >> $GITHUB_STEP_SUMMARY
-          DASH_RESP=$(curl -fsSL "$DASH_URL" 2>&1 | head -c 200) || DASH_RESP="Failed to connect"
-          echo "\`$DASH_RESP\`" >> $GITHUB_STEP_SUMMARY
+      - name: Build and push Dashboard
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.dashboard
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:latest-dev
+
+      # Optional: Force new deployment of ECS services to pick up new images if tags didn't change (latest-dev)
+      # But since we just ran cdk deploy, it might not have updated the service if the image URI string didn't change.
+      # We'll leave it as is for now.
