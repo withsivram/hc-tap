@@ -2,6 +2,7 @@ import json
 import os
 
 import boto3
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -155,10 +156,15 @@ def get_latest_stats():
             resp = s3.get_object(Bucket=ENRICHED_BUCKET, Key="runs/latest.json")
             data = json.loads(resp["Body"].read().decode("utf-8"))
             return data
-        except s3.exceptions.NoSuchKey:
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": "not_found", "message": "No cloud run found"},
+                )
             return JSONResponse(
-                status_code=404,
-                content={"error": "not_found", "message": "No cloud run found"},
+                status_code=500,
+                content={"error": "s3_error", "message": str(e)},
             )
         except Exception as e:
             return JSONResponse(

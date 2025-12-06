@@ -65,11 +65,9 @@ jobs:
             --task-definition $TASK_DEF \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SGS],assignPublicIp=ENABLED}" \
-            --overrides "{\"containerOverrides\":[{\"name\":\"EtlContainer\",\"command\":[\"python\",\"services/etl/etl_cloud.py\"]}]}" \
+            --overrides "{\"containerOverrides\":[{\"name\":\"EtlContainer\",\"command\":[\"python\",\"services/etl/etl_cloud.py\"],\"environment\":[{\"name\":\"RAW_BUCKET\",\"value\":\"${{ env.RAW_BUCKET_NAME }}\"},{\"name\":\"ENRICHED_BUCKET\",\"value\":\"${{ env.ENRICHED_BUCKET_NAME }}\"},{\"name\":\"HC_TAP_ENV\",\"value\":\"cloud\"}]}]}" \
             --query "tasks[0].taskArn" \
             --output text)
-            # Note: Subnets/SGs hardcoded above are risky. Better to query them or output from CDK stack.
-            # For robust automation, we should fetch subnets via CLI.
           
           echo "Task Started: $TASK_ARN"
           
@@ -77,4 +75,13 @@ jobs:
           aws ecs wait tasks-stopped --cluster $CLUSTER --tasks $TASK_ARN
           
           echo "ETL Task Completed."
+          
+          # Fetch and display logs
+          LOG_STREAM=$(aws logs describe-log-streams --log-group-name /ecs/HcTapEtl --order-by LastEventTime --descending --limit 1 --query "logStreams[0].logStreamName" --output text 2>/dev/null || echo "")
+          if [ -n "$LOG_STREAM" ]; then
+            echo "=== ETL Task Logs ==="
+            aws logs get-log-events --log-group-name /ecs/HcTapEtl --log-stream-name "$LOG_STREAM" --limit 100 --query "events[*].message" --output text
+          else
+            echo "No logs found (log group may not exist or task failed before logging)"
+          fi
 
