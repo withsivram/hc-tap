@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy service code
 COPY services/ services/
 
+# Set PYTHONPATH so imports work correctly
+ENV PYTHONPATH=/app
+
 # Default command: run cloud ETL
 CMD ["python", "services/etl/etl_cloud.py"]
 
