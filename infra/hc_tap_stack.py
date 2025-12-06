@@ -14,51 +14,19 @@ class HcTapStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # 1. ECR Repositories
-        # Create ECR repositories for storing Docker images
-        # These will be created by CDK if they don't exist
-        self.api_repo = ecr.Repository(
-            self,
-            "ApiRepo",
-            repository_name="hc-tap/api",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_images=True,
-            lifecycle_rules=[
-                ecr.LifecycleRule(
-                    description="Keep last 3 images",
-                    max_image_count=3,
-                    rule_priority=1,
-                )
-            ],
+        # Reference existing repositories created by GitHub workflow
+        # This avoids chicken-and-egg problem: workflow creates repos and pushes images,
+        # then CDK deploys ECS services that reference those images
+        self.api_repo = ecr.Repository.from_repository_name(
+            self, "ApiRepo", "hc-tap/api"
         )
 
-        self.dashboard_repo = ecr.Repository(
-            self,
-            "DashboardRepo",
-            repository_name="hc-tap/dashboard",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_images=True,
-            lifecycle_rules=[
-                ecr.LifecycleRule(
-                    description="Keep last 3 images",
-                    max_image_count=3,
-                    rule_priority=1,
-                )
-            ],
+        self.dashboard_repo = ecr.Repository.from_repository_name(
+            self, "DashboardRepo", "hc-tap/dashboard"
         )
 
-        self.etl_repo = ecr.Repository(
-            self,
-            "EtlRepo",
-            repository_name="hc-tap/etl",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_images=True,
-            lifecycle_rules=[
-                ecr.LifecycleRule(
-                    description="Keep last 3 images",
-                    max_image_count=3,
-                    rule_priority=1,
-                )
-            ],
+        self.etl_repo = ecr.Repository.from_repository_name(
+            self, "EtlRepo", "hc-tap/etl"
         )
 
         # 2. S3 Buckets
