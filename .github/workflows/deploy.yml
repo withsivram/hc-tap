@@ -38,15 +38,15 @@ jobs:
         with:
           driver: docker
 
-      - name: Install CDK and Python deps
+      # Ensure ECR repositories exist before building images
+      # Using AWS CLI is simpler than CDK for this initial setup
+      - name: Create ECR Repos if needed
         run: |
-          npm install -g aws-cdk
-          python -m pip install -r infra/requirements.txt
-
-      - name: Deploy Infrastructure (CDK) - Create ECR Repos First
-        run: |
-          cd infra
-          cdk deploy --require-approval never
+          for repo in api dashboard etl; do
+            aws ecr describe-repositories --repository-names hc-tap/$repo --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws ecr create-repository --repository-name hc-tap/$repo --region ${{ env.AWS_REGION }} \
+              --image-scanning-configuration scanOnPush=true
+          done
 
       - name: Build and push API
         uses: docker/build-push-action@v5
@@ -81,7 +81,12 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/etl:${{ github.sha }}
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/etl:latest-dev
 
-      - name: Deploy Infrastructure (CDK) - Update Stack
+      - name: Install CDK and Python deps
+        run: |
+          npm install -g aws-cdk
+          python -m pip install -r infra/requirements.txt
+
+      - name: Deploy Infrastructure (CDK)
         run: |
           cd infra
           cdk deploy --require-approval never
