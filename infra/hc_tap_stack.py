@@ -3,6 +3,7 @@ from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ecs_patterns as ecs_patterns
+from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
@@ -111,6 +112,16 @@ class HcTapStack(Stack):
         # 7. ETL Task Definition (Fargate)
         # This is not a Service (doesn't run continuously), but a Task Definition
         # that we can run on-demand via GitHub Actions or AWS CLI.
+        
+        # Create CloudWatch Log Group for ETL
+        self.etl_log_group = logs.LogGroup(
+            self,
+            "EtlLogGroup",
+            log_group_name="/ecs/HcTapEtl",
+            retention=logs.RetentionDays.TWO_WEEKS,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+        
         self.etl_task_def = ecs.FargateTaskDefinition(
             self,
             "EtlTaskDef",
@@ -121,7 +132,10 @@ class HcTapStack(Stack):
         self.etl_container = self.etl_task_def.add_container(
             "EtlContainer",
             image=ecs.ContainerImage.from_ecr_repository(self.etl_repo, "latest-dev"),
-            logging=ecs.LogDriver.aws_logs(stream_prefix="HcTapEtl"),
+            logging=ecs.LogDriver.aws_logs(
+                stream_prefix="HcTapEtl",
+                log_group=self.etl_log_group,
+            ),
             environment={
                 "RAW_BUCKET": self.raw_bucket.bucket_name,
                 "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
