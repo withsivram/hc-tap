@@ -55,8 +55,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY }}/hc-tap/api:${{ github.sha }}
-            ${{ env.ECR_REGISTRY }}/hc-tap/api:latest-dev
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/api:${{ github.sha }}
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/api:latest-dev
 
       - name: Build and push Dashboard
         uses: docker/build-push-action@v5
@@ -66,8 +66,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:${{ github.sha }}
-            ${{ env.ECR_REGISTRY }}/hc-tap/dashboard:latest-dev
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/dashboard:${{ github.sha }}
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/dashboard:latest-dev
 
       - name: Install CDK and Python deps
         run: |
