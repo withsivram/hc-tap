@@ -14,19 +14,30 @@ class HcTapStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # 1. ECR Repositories
-        # Reference existing repositories created by GitHub workflow
-        # This avoids chicken-and-egg problem: workflow creates repos and pushes images,
-        # then CDK deploys ECS services that reference those images
-        self.api_repo = ecr.Repository.from_repository_name(
-            self, "ApiRepo", "hc-tap/api"
+        # CDK creates ECR repositories directly
+        # CloudFormation will create them if they don't exist, or use existing ones
+        self.api_repo = ecr.Repository(
+            self,
+            "ApiRepo",
+            repository_name="hc-tap/api",
+            removal_policy=RemovalPolicy.RETAIN,  # Keep repos when stack is deleted
+            empty_on_delete=False,  # Don't delete images
         )
 
-        self.dashboard_repo = ecr.Repository.from_repository_name(
-            self, "DashboardRepo", "hc-tap/dashboard"
+        self.dashboard_repo = ecr.Repository(
+            self,
+            "DashboardRepo",
+            repository_name="hc-tap/dashboard",
+            removal_policy=RemovalPolicy.RETAIN,
+            empty_on_delete=False,
         )
 
-        self.etl_repo = ecr.Repository.from_repository_name(
-            self, "EtlRepo", "hc-tap/etl"
+        self.etl_repo = ecr.Repository(
+            self,
+            "EtlRepo",
+            repository_name="hc-tap/etl",
+            removal_policy=RemovalPolicy.RETAIN,
+            empty_on_delete=False,
         )
 
         # 2. S3 Buckets

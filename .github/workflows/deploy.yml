@@ -38,13 +38,15 @@ jobs:
         with:
           driver: docker
 
-      # Note: ECR repos are now created by CDK stack
-      # This step ensures they exist before pushing images
-      - name: Ensure ECR Repos Exist
+      - name: Install CDK and Python deps
         run: |
-          aws ecr describe-repositories --repository-names hc-tap/api --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/api --region ${{ env.AWS_REGION }}
-          aws ecr describe-repositories --repository-names hc-tap/dashboard --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/dashboard --region ${{ env.AWS_REGION }}
-          aws ecr describe-repositories --repository-names hc-tap/etl --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/etl --region ${{ env.AWS_REGION }}
+          npm install -g aws-cdk
+          python -m pip install -r infra/requirements.txt
+
+      - name: Deploy Infrastructure (CDK) - Create ECR Repos First
+        run: |
+          cd infra
+          cdk deploy --require-approval never
 
       - name: Build and push API
         uses: docker/build-push-action@v5
@@ -68,12 +70,18 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/dashboard:${{ github.sha }}
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/dashboard:latest-dev
 
-      - name: Install CDK and Python deps
-        run: |
-          npm install -g aws-cdk
-          python -m pip install -r infra/requirements.txt
+      - name: Build and push ETL
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.etl
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/etl:${{ github.sha }}
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hc-tap/etl:latest-dev
 
-      - name: Deploy Infrastructure (CDK)
+      - name: Deploy Infrastructure (CDK) - Update Stack
         run: |
           cd infra
           cdk deploy --require-approval never
