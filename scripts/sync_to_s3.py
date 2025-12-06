@@ -3,7 +3,6 @@
 Sync local notes to S3 raw bucket.
 """
 import os
-import sys
 from pathlib import Path
 
 import boto3
@@ -18,6 +17,15 @@ def sync():
         return
 
     s3 = boto3.client("s3")
+
+    # Check if bucket exists
+    try:
+        s3.head_bucket(Bucket=BUCKET_NAME)
+    except Exception as e:
+        print(f"Error: Bucket '{BUCKET_NAME}' does not exist or is not accessible.")
+        print(f"Details: {e}")
+        print(f"Create bucket with: aws s3 mb s3://{BUCKET_NAME}")
+        return
 
     # Simple sync: upload all files
     # For production, use "aws s3 sync" CLI or check ETags

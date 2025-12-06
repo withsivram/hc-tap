@@ -44,6 +44,21 @@ def create_gold_data():
 
     # Try enriched data first
     if enriched_dir.exists() and any(enriched_dir.iterdir()):
+        # Validate source data before copying
+        try:
+            for p in enriched_dir.glob("*.jsonl"):
+                for line in read_jsonl(p):
+                    # Basic validation
+                    required_keys = {"note_id", "entity_type", "begin", "end", "text"}
+                    if not all(k in line for k in required_keys):
+                        raise ValueError(f"Missing required keys in {p}")
+                    if line["begin"] >= line["end"]:
+                        raise ValueError(f"Invalid span in {p}: begin >= end")
+        except Exception as e:
+            print(f"Validation failed: {e}")
+            print("Source data is invalid. Not creating gold set.")
+            return False
+
         # Copy the directory structure
         shutil.copytree(enriched_dir, gold_dir)
         print(f"Created gold data in {gold_dir} from enriched data")
@@ -54,7 +69,20 @@ def create_gold_data():
         # Read all entity files
         entities = []
         for p in sorted(fallback_dir.glob("*.jsonl")):
-            entities.extend(read_jsonl(p))
+            try:
+                for entity in read_jsonl(p):
+                    # Validate before adding
+                    required_keys = {"note_id", "entity_type", "begin", "end", "text"}
+                    if not all(k in entity for k in required_keys):
+                        print(f"Warning: Skipping invalid entity in {p}")
+                        continue
+                    if entity["begin"] >= entity["end"]:
+                        print(f"Warning: Skipping invalid span in {p}")
+                        continue
+                    entities.append(entity)
+            except Exception as e:
+                print(f"Warning: Failed to read {p}: {e}")
+                continue
 
         if entities:
             # Write to gold location

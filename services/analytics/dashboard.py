@@ -103,7 +103,9 @@ if not metrics:
             "f1_exact_micro": manifest.get("f1_exact_micro"),
             "f1_relaxed_micro": manifest.get("f1_relaxed_micro"),
             "f1_exact_micro_intersection": manifest.get("f1_exact_micro_intersection"),
-            "f1_relaxed_micro_intersection": manifest.get("f1_relaxed_micro_intersection"),
+            "f1_relaxed_micro_intersection": manifest.get(
+                "f1_relaxed_micro_intersection"
+            ),
             "coverage": {
                 "gold_outside_pred_notes": manifest.get(
                     "coverage_gold_outside_pred_notes", 0
@@ -116,7 +118,9 @@ enriched_path = Path(
 )
 entities_df = load_entities(str(enriched_path))
 
-st.caption(f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Enriched: {enriched_path}")
+st.caption(
+    f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Enriched: {enriched_path}"
+)
 
 tab_kpi, tab_demo = st.tabs(["KPIs", "Live Demo"])
 
@@ -219,6 +223,7 @@ with tab_demo:
                 resp = requests.post(
                     f"{API_URL}/extract",
                     json={"text": text_input, "note_id": "demo_web"},
+                    timeout=10,  # 10 second timeout
                 )
                 if resp.status_code == 200:
                     data = resp.json()
@@ -230,6 +235,8 @@ with tab_demo:
                         st.info("No entities detected.")
                 else:
                     st.error(f"API Error {resp.status_code}: {resp.text}")
+            except requests.exceptions.Timeout:
+                st.error(f"Request timed out. API at {API_URL} is not responding.")
             except requests.exceptions.ConnectionError:
                 st.error(f"Could not connect to API at {API_URL}. Is it running?")
             except Exception as e:

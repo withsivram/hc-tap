@@ -19,7 +19,9 @@ REQUIRED = {
 
 
 def _any_jsonl():
-    files = glob.glob(os.path.join("enriched", "entities", "run=LOCAL", "*.jsonl"))
+    files = glob.glob(
+        os.path.join("fixtures", "enriched", "entities", "run=LOCAL", "*.jsonl")
+    )
     return files[0] if files else None
 
 

@@ -31,7 +31,7 @@ services:
   etl:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: Dockerfile.etl
     volumes:
       - ./fixtures:/app/fixtures
       - ./.env:/app/.env

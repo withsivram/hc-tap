@@ -6,8 +6,13 @@ from services.etl.rule_extract import guess_section
 try:
     nlp = spacy.load("en_core_sci_sm")
 except OSError:
-    print("[spacy_extract] Model en_core_sci_sm not found. Run `make bootstrap`.")
-    nlp = spacy.blank("en")
+    print(
+        "[spacy_extract] ERROR: Model en_core_sci_sm not found. Run `make bootstrap`."
+    )
+    print(
+        "[spacy_extract] Extraction will fail. Install the model to use this extractor."
+    )
+    raise RuntimeError("Required spaCy model 'en_core_sci_sm' not found")
 
 
 def extract_entities(text: str, note_id: str, run_id: str):

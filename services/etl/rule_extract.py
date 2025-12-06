@@ -37,7 +37,6 @@ PROBLEM_TERMS = [
     "depression",
     "insomnia",
     "cough",
-    "ough",
 ]
 MEDICATION_TERMS = [
     "metformin",

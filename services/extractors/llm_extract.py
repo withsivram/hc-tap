@@ -58,9 +58,23 @@ class LLMExtractor:
         for i in range(retries):
             try:
                 return self._call_llm(prompt, text, note_id, run_id)
+            except openai.RateLimitError if openai else Exception as e:
+                # Retry on rate limit errors
+                logger.warning(f"LLM call failed (attempt {i+1}): {e}")
+                if i < retries - 1:
+                    time.sleep(2**i)  # Exponential backoff
+            except (
+                (openai.AuthenticationError, openai.InvalidRequestError)
+                if openai
+                else Exception
+            ) as e:
+                # Don't retry on auth or invalid request errors
+                logger.error(f"LLM call failed with non-retryable error: {e}")
+                return []
             except Exception as e:
                 logger.warning(f"LLM call failed (attempt {i+1}): {e}")
-                time.sleep(2**i)  # Exponential backoff
+                if i < retries - 1:
+                    time.sleep(2**i)
 
         logger.error(
             f"LLM extraction failed for note {note_id} after {retries} retries."
@@ -125,11 +139,19 @@ class LLMExtractor:
             if not span_text:
                 continue
 
-            # Find offset (naive first match)
+            # Find offset - try to find exact match in original text
             begin = original_text.find(span_text)
             if begin == -1:
-                # Fallback: LLM hallucinated or normalized text; skip or use 0
-                begin = 0
+                # Try case-insensitive search
+                span_lower = span_text.lower()
+                text_lower = original_text.lower()
+                begin = text_lower.find(span_lower)
+                if begin == -1:
+                    # Cannot find span in text - LLM hallucinated or normalized
+                    logger.warning(
+                        f"Skipping entity - text not found in note: '{span_text[:50]}'"
+                    )
+                    continue
             end = begin + len(span_text)
 
             results.append(

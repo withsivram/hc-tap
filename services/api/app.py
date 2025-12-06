@@ -1,15 +1,27 @@
 import json
+import logging
 import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from services.api.settings import settings
 from services.etl.preprocess import normalize_text
 from services.etl.rule_extract import extract_for_note
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 APP_RUN_ID = settings.APP_RUN_ID
 NOTES_DIR = settings.NOTES_DIR
@@ -18,6 +30,25 @@ RUN_MANIFEST = settings.RUN_MANIFEST
 ENRICHED_BUCKET = os.getenv("ENRICHED_BUCKET")
 
 app = FastAPI(title="HC-TAP API", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Cache for data with timestamp
+_data_cache = {
+    "notes": {},
+    "entities": ([], {}),
+    "last_reload": None,
+    "cache_ttl": 30,  # 30 seconds TTL
+}
 
 
 @app.get("/")
@@ -27,7 +58,52 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    """Enhanced health check with system status."""
+    health_status = {"ok": True, "status": "healthy", "checks": {}}
+
+    # Check if notes directory exists
+    try:
+        if os.path.exists(NOTES_DIR):
+            note_count = len([f for f in os.listdir(NOTES_DIR) if f.endswith(".json")])
+            health_status["checks"]["notes_dir"] = {"ok": True, "count": note_count}
+        else:
+            health_status["checks"]["notes_dir"] = {
+                "ok": False,
+                "error": "Directory not found",
+            }
+            health_status["ok"] = False
+    except Exception as e:
+        health_status["checks"]["notes_dir"] = {"ok": False, "error": str(e)}
+        health_status["ok"] = False
+
+    # Check if enriched file exists
+    try:
+        if os.path.exists(ENRICHED_FILE):
+            health_status["checks"]["enriched_file"] = {"ok": True}
+        else:
+            health_status["checks"]["enriched_file"] = {
+                "ok": False,
+                "warning": "File not found",
+            }
+    except Exception as e:
+        health_status["checks"]["enriched_file"] = {"ok": False, "error": str(e)}
+
+    # Check manifest
+    try:
+        if os.path.exists(RUN_MANIFEST):
+            health_status["checks"]["manifest"] = {"ok": True}
+        else:
+            health_status["checks"]["manifest"] = {
+                "ok": False,
+                "warning": "File not found",
+            }
+    except Exception as e:
+        health_status["checks"]["manifest"] = {"ok": False, "error": str(e)}
+
+    if not health_status["ok"]:
+        health_status["status"] = "degraded"
+
+    return health_status
 
 
 @app.get("/config")
@@ -53,8 +129,8 @@ def load_notes():
             with open(path, "r", encoding="utf-8") as f:
                 obj = json.load(f)
             notes[obj["note_id"]] = obj
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to load note {name}: {e}")
     return notes
 
 
@@ -90,9 +166,33 @@ ALL_ENTS, ENTS_BY_NOTE = load_entities_index()
 
 
 def reload_data():
+    """Reload data with caching."""
     global NOTES, ALL_ENTS, ENTS_BY_NOTE
-    NOTES = load_notes()
-    ALL_ENTS, ENTS_BY_NOTE = load_entities_index()
+
+    now = time.time()
+    if (
+        _data_cache["last_reload"] is not None
+        and now - _data_cache["last_reload"] < _data_cache["cache_ttl"]
+    ):
+        # Use cached data
+        NOTES = _data_cache["notes"]
+        ALL_ENTS, ENTS_BY_NOTE = _data_cache["entities"]
+        return
+
+    try:
+        NOTES = load_notes()
+        ALL_ENTS, ENTS_BY_NOTE = load_entities_index()
+
+        # Update cache
+        _data_cache["notes"] = NOTES
+        _data_cache["entities"] = (ALL_ENTS, ENTS_BY_NOTE)
+        _data_cache["last_reload"] = now
+    except Exception as e:
+        logger.warning(f"Error reloading data: {e}")
+        # Use cached data if available
+        if _data_cache["notes"]:
+            NOTES = _data_cache["notes"]
+            ALL_ENTS, ENTS_BY_NOTE = _data_cache["entities"]
 
 
 @app.get("/notes/{note_id}")
@@ -171,7 +271,7 @@ def get_latest_stats():
                 status_code=500,
                 content={"error": "s3_error", "message": str(e)},
             )
-    
+
     # Fallback to local for non-cloud envs
     return get_run_stats("LOCAL")
 
@@ -199,12 +299,8 @@ def search_entities(
 
     if q:
         ql = q.lower()
-        # scan enriched over norm_text substring
-        items = [
-            e
-            for e in items
-            if (e.get("norm_text") and ql in e.get("norm_text").lower())
-        ]
+        # scan enriched over norm_text substring (norm_text is already lowercase)
+        items = [e for e in items if (e.get("norm_text") and ql in e.get("norm_text"))]
 
     return items[:limit]
 
@@ -213,12 +309,29 @@ class ExtractRequest(BaseModel):
     text: str
     note_id: str | None = None
 
+    def validate_text(self):
+        """Validate text field"""
+        if not self.text or not self.text.strip():
+            raise ValueError("Text cannot be empty")
+        if len(self.text) > 100000:  # 100KB limit
+            raise ValueError("Text too large (max 100KB)")
+        return self.text
+
 
 @app.post("/extract")
-def extract_text(request: ExtractRequest):
-    text = normalize_text(request.text)
+@limiter.limit("10/minute")  # Rate limit: 10 requests per minute
+def extract_text(request: Request, extract_request: ExtractRequest):
+    try:
+        text = extract_request.validate_text()
+    except ValueError as e:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "bad_request", "message": str(e)},
+        )
+
+    text = normalize_text(text)
     note_payload = {
-        "note_id": request.note_id or "demo",
+        "note_id": extract_request.note_id or "demo",
         "text": text,
     }
     entities = extract_for_note(note_payload)

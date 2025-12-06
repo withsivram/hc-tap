@@ -5,6 +5,9 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  # Note: Move these to GitHub repository secrets for better security
+  # AWS_ACCOUNT_ID should be in secrets.AWS_ACCOUNT_ID
+  # AWS_ROLE_ARN should be in secrets.AWS_ROLE_ARN
   RAW_BUCKET_NAME: hc-tap-raw-notes
   ENRICHED_BUCKET_NAME: hc-tap-enriched-entities
 
@@ -37,7 +40,13 @@ jobs:
           TASK_DEF=$(aws ecs list-task-definitions --family-prefix $TASK_DEF_FAMILY --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
           
           # Find Cluster (dynamic lookup to be safe)
-          CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'HcTapStack')]" --output text)
+          CLUSTER=$(aws ecs list-clusters --query "clusterArns[?contains(@, 'HcTapStack')]" --output text | head -n 1)
+          
+          if [ -z "$CLUSTER" ]; then
+            echo "Error: Could not find HcTapStack cluster."
+            aws ecs list-clusters
+            exit 1
+          fi
           
           echo "Running ETL on Cluster: $CLUSTER"
           echo "Task Def Family: $TASK_DEF_FAMILY"
@@ -46,6 +55,12 @@ jobs:
           # Get Subnets and Security Groups dynamically from the cluster's existing service
           # (Assumes ApiService uses the same VPC/Subnets)
           SERVICE_ARN=$(aws ecs list-services --cluster $CLUSTER --max-items 1 --query "serviceArns[0]" --output text)
+          
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "Error: No services found in cluster."
+            exit 1
+          fi
+          
           NET_CONF=$(aws ecs describe-services --cluster $CLUSTER --services $SERVICE_ARN --query "services[0].networkConfiguration" --output json)
           
           # Parse JSON to string for run-task (requires jq)

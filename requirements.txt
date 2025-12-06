@@ -6,8 +6,10 @@ jsonschema==4.23.0
 python-dotenv==1.0.1
 spacy==3.7.5
 openai==1.40.0
-anthropic
+anthropic==0.34.2
 pyarrow
 duckdb
 pytest
 boto3==1.34.0
+requests==2.32.3
+slowapi==0.1.9

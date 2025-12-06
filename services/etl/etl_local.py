@@ -26,8 +26,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 
 from services.etl import rule_extract  # noqa: E402
-from services.etl.preprocess import (normalize_entity_text,  # noqa: E402
-                                     normalize_text)
+from services.etl.preprocess import normalize_entity_text, normalize_text  # noqa: E402
 
 RUN_ID = "LOCAL"
 EXTRACTOR_NAME = "rule"
@@ -97,7 +96,11 @@ def normalize_entity(entity: Dict, note_id: str) -> Dict:
     begin = int(entity.get("begin", 0) or 0)
     end = int(entity.get("end", 0) or 0)
     if begin >= end:
-        raise ValueError(f"Invalid span ({begin}, {end}) for note {note_id}")
+        log(
+            f"Invalid span ({begin}, {end}) for note {note_id}, skipping entity",
+            debug=False,
+        )
+        return None
     entity["begin"] = begin
     entity["end"] = end
     return entity
@@ -105,30 +108,48 @@ def normalize_entity(entity: Dict, note_id: str) -> Dict:
 
 def atomic_write_json(path: Path, payload: Dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=str(path.parent), delete=False
-    ) as fh:
-        json.dump(payload, fh, indent=2)
-        fh.flush()
-        os.fsync(fh.fileno())
-        tmp_name = fh.name
-    os.replace(tmp_name, path)
+    tmp_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=str(path.parent), delete=False
+        ) as fh:
+            json.dump(payload, fh, indent=2)
+            fh.flush()
+            os.fsync(fh.fileno())
+            tmp_name = fh.name
+        os.replace(tmp_name, path)
+    except Exception:
+        if tmp_name and os.path.exists(tmp_name):
+            try:
+                os.unlink(tmp_name)
+            except Exception:
+                pass
+        raise
 
 
 def atomic_write_jsonl(path: Path, records: Iterable[Dict]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     written = 0
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=str(path.parent), delete=False
-    ) as fh:
-        for record in records:
-            fh.write(json.dumps(record, ensure_ascii=False))
-            fh.write("\n")
-            written += 1
-        fh.flush()
-        os.fsync(fh.fileno())
-        tmp_name = fh.name
-    os.replace(tmp_name, path)
+    tmp_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=str(path.parent), delete=False
+        ) as fh:
+            for record in records:
+                fh.write(json.dumps(record, ensure_ascii=False))
+                fh.write("\n")
+                written += 1
+            fh.flush()
+            os.fsync(fh.fileno())
+            tmp_name = fh.name
+        os.replace(tmp_name, path)
+    except Exception:
+        if tmp_name and os.path.exists(tmp_name):
+            try:
+                os.unlink(tmp_name)
+            except Exception:
+                pass
+        raise
     return written
 
 
@@ -158,6 +179,8 @@ class EntityEmitter:
             self.notes_seen += 1
             for entity in entities:
                 normalized = normalize_entity(entity, note_id)
+                if normalized is None:
+                    continue  # Skip invalid entities
                 if len(self.sample) < 3:
                     self.sample.append(normalized.copy())
                 self.entities_total += 1
