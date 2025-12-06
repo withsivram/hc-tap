@@ -1,4 +1,4 @@
-from aws_cdk import Duration, RemovalPolicy, Stack
+from aws_cdk import RemovalPolicy, Stack
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_ecs as ecs
@@ -14,18 +14,51 @@ class HcTapStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # 1. ECR Repositories
-        # We reference existing repositories since we pre-provision them in the GitHub workflow
-        # to avoid the "chicken-and-egg" problem of ECS Service waiting for an image.
-        self.api_repo = ecr.Repository.from_repository_name(
-            self, "ApiRepo", "hc-tap/api"
+        # Create ECR repositories for storing Docker images
+        # These will be created by CDK if they don't exist
+        self.api_repo = ecr.Repository(
+            self,
+            "ApiRepo",
+            repository_name="hc-tap/api",
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_images=True,
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Keep last 3 images",
+                    max_image_count=3,
+                    rule_priority=1,
+                )
+            ],
         )
 
-        self.dashboard_repo = ecr.Repository.from_repository_name(
-            self, "DashboardRepo", "hc-tap/dashboard"
+        self.dashboard_repo = ecr.Repository(
+            self,
+            "DashboardRepo",
+            repository_name="hc-tap/dashboard",
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_images=True,
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Keep last 3 images",
+                    max_image_count=3,
+                    rule_priority=1,
+                )
+            ],
         )
 
-        self.etl_repo = ecr.Repository.from_repository_name(
-            self, "EtlRepo", "hc-tap/etl"
+        self.etl_repo = ecr.Repository(
+            self,
+            "EtlRepo",
+            repository_name="hc-tap/etl",
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_images=True,
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Keep last 3 images",
+                    max_image_count=3,
+                    rule_priority=1,
+                )
+            ],
         )
 
         # 2. S3 Buckets
@@ -112,7 +145,7 @@ class HcTapStack(Stack):
         # 7. ETL Task Definition (Fargate)
         # This is not a Service (doesn't run continuously), but a Task Definition
         # that we can run on-demand via GitHub Actions or AWS CLI.
-        
+
         # Create CloudWatch Log Group for ETL
         self.etl_log_group = logs.LogGroup(
             self,
@@ -121,7 +154,7 @@ class HcTapStack(Stack):
             retention=logs.RetentionDays.TWO_WEEKS,
             removal_policy=RemovalPolicy.DESTROY,
         )
-        
+
         self.etl_task_def = ecs.FargateTaskDefinition(
             self,
             "EtlTaskDef",
@@ -140,7 +173,7 @@ class HcTapStack(Stack):
                 "RAW_BUCKET": self.raw_bucket.bucket_name,
                 "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
                 "HC_TAP_ENV": "cloud",
-                "RUN_ID": "cloud-manual", # Default, can be overridden
+                "RUN_ID": "cloud-manual",  # Default, can be overridden
             },
         )
 

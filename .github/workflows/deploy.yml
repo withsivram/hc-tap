@@ -38,14 +38,13 @@ jobs:
         with:
           driver: docker
 
-      # FIX: Create ECR repos explicitly before building/pushing
-      # This ensures we can push images BEFORE running CDK deploy
-      # (which launches ECS services that depend on these images)
+      # Note: ECR repos are now created by CDK stack
+      # This step ensures they exist before pushing images
       - name: Ensure ECR Repos Exist
         run: |
-          aws ecr describe-repositories --repository-names hc-tap/api || aws ecr create-repository --repository-name hc-tap/api
-          aws ecr describe-repositories --repository-names hc-tap/dashboard || aws ecr create-repository --repository-name hc-tap/dashboard
-          aws ecr describe-repositories --repository-names hc-tap/etl || aws ecr create-repository --repository-name hc-tap/etl
+          aws ecr describe-repositories --repository-names hc-tap/api --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/api --region ${{ env.AWS_REGION }}
+          aws ecr describe-repositories --repository-names hc-tap/dashboard --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/dashboard --region ${{ env.AWS_REGION }}
+          aws ecr describe-repositories --repository-names hc-tap/etl --region ${{ env.AWS_REGION }} 2>/dev/null || aws ecr create-repository --repository-name hc-tap/etl --region ${{ env.AWS_REGION }}
 
       - name: Build and push API
         uses: docker/build-push-action@v5
