@@ -112,45 +112,37 @@ if not manifest:
     )
     manifest = {}  # Provide empty dict to prevent AttributeError
 
-# Cloud manifests use "run_id", local manifests use "extractor"
-# Check if this is a cloud manifest (has run_id, no extractor_metrics)
-is_cloud_manifest = "run_id" in manifest and "extractor_metrics" not in manifest
-
-if is_cloud_manifest:
-    # Cloud mode: use run_id directly
-    current_extractor = manifest.get("run_id", "cloud-latest")
+# Determine which metrics to show
+# Priority: 1) Flat F1 scores in manifest, 2) extractor_metrics, 3) Cloud manifest
+if "f1_exact_micro" in manifest:
+    # Flat F1 scores available - use directly
+    current_extractor = manifest.get("extractor", manifest.get("run_id", "LOCAL"))
     extractors = [current_extractor]
-    metrics_map = {current_extractor: manifest}
-else:
+    metrics = manifest
+    is_cloud_manifest = True  # Treat as cloud for display
+elif "extractor_metrics" in manifest and manifest.get("extractor_metrics"):
     # Local mode: use extractor_metrics structure
     metrics_map = manifest.get("extractor_metrics", {})
     current_extractor = manifest.get("extractor", "local")
     extractors = sorted(metrics_map.keys()) or [current_extractor]
+    
+    selected_extractor = st.selectbox(
+        "Select Run",
+        extractors,
+        index=extractors.index(current_extractor) if current_extractor in extractors else 0,
+    )
+    metrics = metrics_map.get(selected_extractor, {})
+    is_cloud_manifest = False
+else:
+    # Cloud manifest (run_id only, no metrics yet)
+    current_extractor = manifest.get("run_id", "cloud-latest")
+    extractors = [current_extractor]
+    metrics = manifest
+    is_cloud_manifest = True
 
-selected_extractor = st.selectbox(
-    "Select Run",
-    extractors,
-    index=extractors.index(current_extractor) if current_extractor in extractors else 0,
-)
-metrics = metrics_map.get(selected_extractor, {})
-if not metrics:
-    # If structure is flat (cloud stats), map directly
-    if "f1_exact_micro" in manifest:
-        metrics = manifest
-    else:
-        metrics = {
-            "f1_exact_micro": manifest.get("f1_exact_micro"),
-            "f1_relaxed_micro": manifest.get("f1_relaxed_micro"),
-            "f1_exact_micro_intersection": manifest.get("f1_exact_micro_intersection"),
-            "f1_relaxed_micro_intersection": manifest.get(
-                "f1_relaxed_micro_intersection"
-            ),
-            "coverage": {
-                "gold_outside_pred_notes": manifest.get(
-                    "coverage_gold_outside_pred_notes", 0
-                ),
-            },
-        }
+# If no extractor selector was shown (flat F1 or cloud mode), set selected_extractor
+if 'selected_extractor' not in locals():
+    selected_extractor = current_extractor
 
 enriched_path = Path(
     f"fixtures/enriched/entities/run={selected_extractor}/part-000.jsonl"
