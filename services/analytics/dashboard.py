@@ -167,11 +167,17 @@ with tab_kpi:
     row1[1].metric("Total Entities", int(len(entities_df)))
 
     row2 = st.columns(2)
+    # Show Precision and Recall instead of Unique Notes
+    precision = metrics.get("precision_exact_micro")
+    recall = metrics.get("recall_exact_micro")
     row2[0].metric(
-        "Unique Notes",
-        manifest.get("note_count", 0),
+        "Precision",
+        as_metric(precision),
     )
-    row2[1].metric("Errors", int(manifest.get("errors", 0)))
+    row2[1].metric(
+        "Recall", 
+        as_metric(recall),
+    )
 
     st.subheader("KPI — Strict F1")
     strict_cols = st.columns(2)
