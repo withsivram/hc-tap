@@ -186,6 +186,27 @@ def main():
     keys = list_s3_notes(RAW_BUCKET)
     print(f"Found {len(keys)} notes.")
 
+    # Load gold data FIRST to filter notes for LLM extraction (Demo Optimization)
+    # This prevents processing 5000+ notes with LLM which takes hours/costs $$$
+    print(f"Loading gold data from s3://{ENRICHED_BUCKET}/{GOLD_S3_KEY}")
+    golds = load_gold_from_s3(ENRICHED_BUCKET, GOLD_S3_KEY)
+    gold_note_ids = {g.get("note_id") for g in golds if g.get("note_id")}
+
+    if EXTRACTOR_NAME == "llm" and gold_note_ids:
+        print(f"LLM Demo Mode: Filtering to {len(gold_note_ids)} gold notes only")
+        filtered_keys = []
+        for key in keys:
+            # key format: raw/note_001.json -> note_001
+            note_id = key.split("/")[-1].replace(".json", "")
+            if note_id in gold_note_ids:
+                filtered_keys.append(key)
+        
+        if filtered_keys:
+            keys = filtered_keys
+            print(f"Filtered down to {len(keys)} notes for processing.")
+        else:
+            print("Warning: No matching notes found in raw bucket corresponding to gold standard.")
+
     all_entities = []
     durations = []
     processed_count = 0
@@ -225,9 +246,8 @@ def main():
     p95 = quantile_ms(durations, 0.95)
 
     # Load gold data and calculate F1 scores
-    print(f"Loading gold data from s3://{ENRICHED_BUCKET}/{GOLD_S3_KEY}")
-    golds = load_gold_from_s3(ENRICHED_BUCKET, GOLD_S3_KEY)
-
+    # golds already loaded above
+    
     f1_exact = 0.0
     f1_relaxed = 0.0
     f1_exact_inter = 0.0
