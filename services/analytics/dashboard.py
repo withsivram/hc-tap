@@ -88,17 +88,9 @@ def as_metric(value):
 
 def badge(value):
     if value is None:
-        return ("N/A", "off")
-    # Adjusted thresholds for realistic medical NER performance
-    # 60%+ is good, 70%+ is excellent for comprehensive clinical entity extraction
-    if value >= 0.70:
-        return ("EXCELLENT", "normal")
-    elif value >= 0.60:
-        return ("GOOD", "normal")
-    elif value >= 0.50:
-        return ("FAIR", "off")
-    else:
-        return ("NEEDS IMPROVEMENT", "inverse")
+        return ("", "off")
+    # Return empty string - no badge labels
+    return ("", "off")
 
 
 st.set_page_config(page_title="Healthcare Text Analytics", layout="wide")
