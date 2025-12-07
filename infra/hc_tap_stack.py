@@ -157,7 +157,7 @@ class HcTapStack(Stack):
 
         self.etl_container = self.etl_task_def.add_container(
             "EtlContainer",
-            image=ecs.ContainerImage.from_ecr_repository(self.etl_repo),  # Use digest instead of tag to force pull
+            image=ecs.ContainerImage.from_ecr_repository(self.etl_repo, "latest-dev"),
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix="HcTapEtl",
                 log_group=self.etl_log_group,
