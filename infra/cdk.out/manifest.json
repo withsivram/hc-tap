@@ -1,0 +1,485 @@
+{
+  "version": "35.0.0",
+  "artifacts": {
+    "HcTapStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "HcTapStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "HcTapStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://099200121087/us-east-1",
+      "properties": {
+        "templateFile": "HcTapStack.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::099200121087:role/cdk-hnb659fds-deploy-role-099200121087-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::099200121087:role/cdk-hnb659fds-cfn-exec-role-099200121087-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-099200121087-us-east-1/a1398aeb9f66b8d34e83b4d337832a8c6cadd9678a3a7c1fd10794eaafaf5930.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "HcTapStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::099200121087:role/cdk-hnb659fds-lookup-role-099200121087-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "HcTapStack.assets"
+      ],
+      "metadata": {
+        "/HcTapStack/RawDataBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RawDataBucket57F26C03"
+          }
+        ],
+        "/HcTapStack/RawDataBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RawDataBucketPolicyAAD9269B"
+          }
+        ],
+        "/HcTapStack/RawDataBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RawDataBucketAutoDeleteObjectsCustomResource1C0E67FF"
+          }
+        ],
+        "/HcTapStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/HcTapStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/HcTapStack/EnrichedDataBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnrichedDataBucket1D420A7B"
+          }
+        ],
+        "/HcTapStack/EnrichedDataBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnrichedDataBucketPolicy857AF3B7"
+          }
+        ],
+        "/HcTapStack/EnrichedDataBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EnrichedDataBucketAutoDeleteObjectsCustomResourceFDC11CFA"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcA4C05E40"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1Subnet45EE895C"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1RouteTableF849321D"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1RouteTableAssociationDF92E8B5"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1DefaultRoute35A77C2B"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1EIP7D80F3A4"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet1NATGateway562FE9D9"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2Subnet12AAAFC2"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2RouteTable1A759E1D"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2RouteTableAssociation0483903E"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2DefaultRoute7BCF1E7E"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2EIP1502D152"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PublicSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPublicSubnet2NATGatewayE4FAAE5B"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet1Subnet013DD80D"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet1RouteTable6AA1AE49"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet1RouteTableAssociation8484CE1A"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet1DefaultRouteC33A63A8"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet2Subnet51D1B6E5"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet2RouteTable323A044C"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet2RouteTableAssociation5D90CE43"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcPrivateSubnet2DefaultRouteE9D047AB"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcIGWE906E7BF"
+          }
+        ],
+        "/HcTapStack/HcTapVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapVpcVPCGWB56F0E58"
+          }
+        ],
+        "/HcTapStack/HcTapCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HcTapCluster7E2888D7"
+          }
+        ],
+        "/HcTapStack/ApiService/LB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLB08B891CD"
+          }
+        ],
+        "/HcTapStack/ApiService/LB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLBSecurityGroup5C16BEF8"
+          }
+        ],
+        "/HcTapStack/ApiService/LB/SecurityGroup/to HcTapStackApiServiceSecurityGroupA39F7F82:8000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLBSecurityGrouptoHcTapStackApiServiceSecurityGroupA39F7F828000971ED11C"
+          }
+        ],
+        "/HcTapStack/ApiService/LB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLBPublicListener1394DF3E"
+          }
+        ],
+        "/HcTapStack/ApiService/LB/PublicListener/ECSGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLBPublicListenerECSGroup14A87FE9"
+          }
+        ],
+        "/HcTapStack/ApiService/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceLoadBalancerDNSBF9EB7FC"
+          }
+        ],
+        "/HcTapStack/ApiService/ServiceURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceServiceURL2EB28DB2"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefTaskRole1014CB34"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefTaskRoleDefaultPolicy63C68204"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefDF3191FB"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/web/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefwebLogGroup57352A09"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefExecutionRole43B90DD6"
+          }
+        ],
+        "/HcTapStack/ApiService/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceTaskDefExecutionRoleDefaultPolicyDCB48050"
+          }
+        ],
+        "/HcTapStack/ApiService/Service/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiService199661B5"
+          }
+        ],
+        "/HcTapStack/ApiService/Service/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceSecurityGroup2592096B"
+          }
+        ],
+        "/HcTapStack/ApiService/Service/SecurityGroup/from HcTapStackApiServiceLBSecurityGroup5AF11775:8000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiServiceSecurityGroupfromHcTapStackApiServiceLBSecurityGroup5AF11775800048C7C64E"
+          }
+        ],
+        "/HcTapStack/DashboardService/LB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLB6B0DA695"
+          }
+        ],
+        "/HcTapStack/DashboardService/LB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLBSecurityGroup1608ACCB"
+          }
+        ],
+        "/HcTapStack/DashboardService/LB/SecurityGroup/to HcTapStackDashboardServiceSecurityGroupE90EC396:8501": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLBSecurityGrouptoHcTapStackDashboardServiceSecurityGroupE90EC396850198E190CB"
+          }
+        ],
+        "/HcTapStack/DashboardService/LB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLBPublicListener4FFD297B"
+          }
+        ],
+        "/HcTapStack/DashboardService/LB/PublicListener/ECSGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLBPublicListenerECSGroupF0C1B9F8"
+          }
+        ],
+        "/HcTapStack/DashboardService/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceLoadBalancerDNSE0D9A1D4"
+          }
+        ],
+        "/HcTapStack/DashboardService/ServiceURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceServiceURLE454BEAD"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDefTaskRoleC786C44B"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDefTaskRoleDefaultPolicy71D71B3E"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDef92990FF2"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/web/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDefwebLogGroup03CF26E9"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDefExecutionRole36F4C569"
+          }
+        ],
+        "/HcTapStack/DashboardService/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceTaskDefExecutionRoleDefaultPolicy558D3B69"
+          }
+        ],
+        "/HcTapStack/DashboardService/Service/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardService4A4198DA"
+          }
+        ],
+        "/HcTapStack/DashboardService/Service/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceSecurityGroup673A2B3F"
+          }
+        ],
+        "/HcTapStack/DashboardService/Service/SecurityGroup/from HcTapStackDashboardServiceLBSecurityGroupB3531421:8501": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DashboardServiceSecurityGroupfromHcTapStackDashboardServiceLBSecurityGroupB353142185011B6D88D3"
+          }
+        ],
+        "/HcTapStack/EtlLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlLogGroup90825D1C"
+          }
+        ],
+        "/HcTapStack/EtlTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlTaskDefTaskRole36C77990"
+          }
+        ],
+        "/HcTapStack/EtlTaskDef/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlTaskDefTaskRoleDefaultPolicyA3A7E713"
+          }
+        ],
+        "/HcTapStack/EtlTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlTaskDefC1382475"
+          }
+        ],
+        "/HcTapStack/EtlTaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlTaskDefExecutionRole12894547"
+          }
+        ],
+        "/HcTapStack/EtlTaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EtlTaskDefExecutionRoleDefaultPolicyA8890432"
+          }
+        ],
+        "/HcTapStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/HcTapStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/HcTapStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "HcTapStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}

@@ -23,3 +23,4 @@ make docker-up
 - `make dash`: Run local dashboard (outside Docker)
 - `make compare`: Compare default vs strict vs strict-lite profiles
 
+# Demo ready - Sat Dec  6 23:24:31 EST 2025
