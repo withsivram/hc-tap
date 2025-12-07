@@ -41,8 +41,10 @@ def load_entities(path: str, run_id: str = None):
     """Load entities from local file or S3 based on environment."""
     rows = []
 
-    # Try S3 if cloud mode (API_URL is not localhost and run_id looks like cloud)
-    if API_URL and "localhost" not in API_URL and run_id and run_id.startswith("cloud"):
+    # Try S3 if cloud mode
+    is_cloud = (API_URL and "localhost" not in API_URL) or os.getenv("HC_TAP_ENV") == "cloud"
+    
+    if is_cloud and run_id:
         try:
             import boto3
 
