@@ -17,10 +17,27 @@ from services.etl.rule_extract import extract_for_note, median_ms, quantile_ms, 
 
 RAW_BUCKET = os.getenv("RAW_BUCKET")
 ENRICHED_BUCKET = os.getenv("ENRICHED_BUCKET")
-RUN_ID = os.getenv("RUN_ID", "cloud-latest")
+
+# Check which extractor to use
+EXTRACTOR_NAME = os.getenv("EXTRACTOR", "rule").lower()
+RUN_ID = os.getenv("RUN_ID", f"cloud-{EXTRACTOR_NAME}")
+
 # DEMO MODE: Use comprehensive gold standard for better F1 scores
 GOLD_S3_KEY = "gold/gold_DEMO.jsonl"
 TYPES = ("PROBLEM", "MEDICATION")
+
+# Import extractors based on configuration
+llm_extractor = None
+if EXTRACTOR_NAME == "llm":
+    try:
+        from services.extractors.llm_extract import LLMExtractor
+        llm_extractor = LLMExtractor()
+        print("✅ LLM Extractor initialized for cloud ETL")
+    except Exception as e:
+        print(f"Failed to initialize LLM extractor: {e}")
+        print("Falling back to rule-based extraction")
+        EXTRACTOR_NAME = "rule"
+        RUN_ID = "cloud-rule"
 
 s3 = boto3.client("s3")
 
@@ -176,8 +193,16 @@ def main():
     for key in keys:
         try:
             note = read_s3_json(RAW_BUCKET, key)
+            note_id = note.get("note_id", key.split("/")[-1].replace(".json", ""))
+            
             t0 = time.perf_counter()
-            entities = extract_for_note(note)
+            
+            # Choose extractor based on EXTRACTOR_NAME
+            if EXTRACTOR_NAME == "llm" and llm_extractor:
+                entities = llm_extractor.extract(note.get("text", ""), note_id, RUN_ID) or []
+            else:
+                entities = extract_for_note(note)
+            
             durations.append(time.perf_counter() - t0)
 
             for ent in entities:
@@ -232,20 +257,41 @@ def main():
 
         print(f"F1 (exact): {f1_exact:.3f}, F1 (relaxed): {f1_relaxed:.3f}")
         print(f"F1 Intersection (exact): {f1_exact_inter:.3f}, (relaxed): {f1_relaxed_inter:.3f}")
+        
+        # Store additional metrics for dashboard
+        precision_exact = strict_exact.get("microP", 0.0)
+        recall_exact = strict_exact.get("microR", 0.0)
+        precision_exact_inter = inter_exact.get("microP", 0.0)
+        recall_exact_inter = inter_exact.get("microR", 0.0)
     else:
         print("No gold data found, F1 scores will be 0.0")
+        precision_exact = recall_exact = 0.0
+        precision_exact_inter = recall_exact_inter = 0.0
 
+    # Count coverage
+    gold_note_ids = {g.get("note_id") for g in golds if g.get("note_id")} if golds else set()
+    pred_note_ids = {p.get("note_id") for p in all_entities if p.get("note_id")}
+    
     stats = {
         "run_id": RUN_ID,
+        "extractor": EXTRACTOR_NAME,
         "ts": utc_iso(),
         "note_count": processed_count,
         "entity_count": len(all_entities),
-        "p50_ms": p50,
-        "p95_ms": p95,
+        "duration_ms_p50": p50,
+        "duration_ms_p95": p95,
         "f1_exact_micro": f1_exact,
         "f1_relaxed_micro": f1_relaxed,
         "f1_exact_micro_intersection": f1_exact_inter,
         "f1_relaxed_micro_intersection": f1_relaxed_inter,
+        "precision_exact_micro": precision_exact,
+        "recall_exact_micro": recall_exact,
+        "precision_exact_micro_intersection": precision_exact_inter,
+        "recall_exact_micro_intersection": recall_exact_inter,
+        "coverage_gold_items": len(golds) if golds else 0,
+        "coverage_pred_items": len(all_entities),
+        "coverage_gold_notes": len(gold_note_ids),
+        "coverage_pred_notes": len(pred_note_ids),
         "status": "success",
     }
 

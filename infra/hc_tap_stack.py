@@ -5,6 +5,7 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ecs_patterns as ecs_patterns
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_secretsmanager as secretsmanager
 from constructs import Construct
 
 
@@ -130,6 +131,30 @@ class HcTapStack(Stack):
             memory_limit_mib=1024,  # Give ETL a bit more juice
         )
 
+        # Reference Anthropic API Key from Secrets Manager (create manually if needed)
+        try:
+            anthropic_secret = secretsmanager.Secret.from_secret_name_v2(
+                self,
+                "AnthropicSecret",
+                "hc-tap/anthropic-api-key"
+            )
+        except Exception:
+            anthropic_secret = None
+
+        # Build environment variables
+        etl_env = {
+            "RAW_BUCKET": self.raw_bucket.bucket_name,
+            "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
+            "HC_TAP_ENV": "cloud",
+            "EXTRACTOR": "llm",  # Use LLM extractor for demo
+            "EXTRACTOR_LLM": "anthropic",
+        }
+
+        # Build secrets
+        etl_secrets = {}
+        if anthropic_secret:
+            etl_secrets["ANTHROPIC_API_KEY"] = ecs.Secret.from_secrets_manager(anthropic_secret)
+
         self.etl_container = self.etl_task_def.add_container(
             "EtlContainer",
             image=ecs.ContainerImage.from_ecr_repository(self.etl_repo, "latest-dev"),
@@ -137,12 +162,8 @@ class HcTapStack(Stack):
                 stream_prefix="HcTapEtl",
                 log_group=self.etl_log_group,
             ),
-            environment={
-                "RAW_BUCKET": self.raw_bucket.bucket_name,
-                "ENRICHED_BUCKET": self.enriched_bucket.bucket_name,
-                "HC_TAP_ENV": "cloud",
-                "RUN_ID": "cloud-manual",  # Default, can be overridden
-            },
+            environment=etl_env,
+            secrets=etl_secrets,
         )
 
         # Grant permissions
