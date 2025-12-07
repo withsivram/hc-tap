@@ -61,44 +61,82 @@ def health():
     """Enhanced health check with system status."""
     health_status = {"ok": True, "status": "healthy", "checks": {}}
 
-    # Check if notes directory exists
+    # Determine if running in cloud mode
+    is_cloud = ENRICHED_BUCKET is not None
+
+    # Check if notes directory exists (only required for local)
     try:
         if os.path.exists(NOTES_DIR):
             note_count = len([f for f in os.listdir(NOTES_DIR) if f.endswith(".json")])
             health_status["checks"]["notes_dir"] = {"ok": True, "count": note_count}
         else:
-            health_status["checks"]["notes_dir"] = {
-                "ok": False,
-                "error": "Directory not found",
-            }
-            health_status["ok"] = False
+            if is_cloud:
+                # In cloud mode, local files not needed
+                health_status["checks"]["notes_dir"] = {
+                    "ok": True,
+                    "info": "Cloud mode - data in S3",
+                }
+            else:
+                health_status["checks"]["notes_dir"] = {
+                    "ok": False,
+                    "error": "Directory not found",
+                }
+                health_status["ok"] = False
     except Exception as e:
         health_status["checks"]["notes_dir"] = {"ok": False, "error": str(e)}
-        health_status["ok"] = False
+        if not is_cloud:
+            health_status["ok"] = False
 
-    # Check if enriched file exists
+    # Check if enriched file exists (only required for local)
     try:
         if os.path.exists(ENRICHED_FILE):
             health_status["checks"]["enriched_file"] = {"ok": True}
         else:
-            health_status["checks"]["enriched_file"] = {
-                "ok": False,
-                "warning": "File not found",
-            }
+            if is_cloud:
+                health_status["checks"]["enriched_file"] = {
+                    "ok": True,
+                    "info": "Cloud mode - data in S3",
+                }
+            else:
+                health_status["checks"]["enriched_file"] = {
+                    "ok": False,
+                    "warning": "File not found",
+                }
     except Exception as e:
         health_status["checks"]["enriched_file"] = {"ok": False, "error": str(e)}
 
-    # Check manifest
+    # Check manifest (only required for local)
     try:
         if os.path.exists(RUN_MANIFEST):
             health_status["checks"]["manifest"] = {"ok": True}
         else:
-            health_status["checks"]["manifest"] = {
-                "ok": False,
-                "warning": "File not found",
-            }
+            if is_cloud:
+                health_status["checks"]["manifest"] = {
+                    "ok": True,
+                    "info": "Cloud mode - data in S3",
+                }
+            else:
+                health_status["checks"]["manifest"] = {
+                    "ok": False,
+                    "warning": "File not found",
+                }
     except Exception as e:
         health_status["checks"]["manifest"] = {"ok": False, "error": str(e)}
+
+    # In cloud mode, verify S3 access
+    if is_cloud:
+        try:
+            s3 = boto3.client("s3")
+            s3.head_bucket(Bucket=ENRICHED_BUCKET)
+            health_status["checks"]["s3_access"] = {
+                "ok": True,
+                "bucket": ENRICHED_BUCKET,
+            }
+        except Exception as e:
+            health_status["checks"]["s3_access"] = {"ok": False, "error": str(e)}
+            health_status["ok"] = False
+
+    health_status["mode"] = "cloud" if is_cloud else "local"
 
     if not health_status["ok"]:
         health_status["status"] = "degraded"

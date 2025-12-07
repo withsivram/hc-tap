@@ -37,9 +37,37 @@ def load_manifest(path: str):
 
 
 @st.cache_data(ttl=3)
-def load_entities(path: str):
-    # TODO: Fetch entities from API/S3 in future
+def load_entities(path: str, run_id: str = None):
+    """Load entities from local file or S3 based on environment."""
     rows = []
+
+    # Try S3 if cloud mode (API_URL is not localhost and run_id looks like cloud)
+    if API_URL and "localhost" not in API_URL and run_id and run_id.startswith("cloud"):
+        try:
+            import boto3
+
+            s3 = boto3.client("s3")
+            # Cloud entities are at: s3://hc-tap-enriched-entities/runs/{run_id}/entities.jsonl
+            bucket = "hc-tap-enriched-entities"
+            key = f"runs/{run_id}/entities.jsonl"
+
+            resp = s3.get_object(Bucket=bucket, Key=key)
+            body = resp["Body"].read().decode("utf-8")
+
+            for line in body.split("\n"):
+                line = line.strip()
+                if line:
+                    try:
+                        rows.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        log("Skipping malformed JSON in S3 object")
+
+            log(f"Loaded {len(rows)} entities from S3: {bucket}/{key}")
+            return pd.DataFrame(rows)
+        except Exception as e:
+            log(f"Error loading from S3: {e}, falling back to local")
+
+    # Fallback to local file
     p = Path(path)
     if not p.exists():
         return pd.DataFrame(rows)
@@ -116,7 +144,7 @@ if not metrics:
 enriched_path = Path(
     f"fixtures/enriched/entities/run={selected_extractor}/part-000.jsonl"
 )
-entities_df = load_entities(str(enriched_path))
+entities_df = load_entities(str(enriched_path), run_id=selected_extractor)
 
 st.caption(
     f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Enriched: {enriched_path}"
