@@ -1,12 +1,13 @@
 """
 Cloud ETL script for HC-TAP.
-Reads raw notes from S3, runs extraction, and writes enriched entities + stats to S3.
+Reads raw notes from S3, runs extraction, evaluation, and writes enriched entities + stats to S3.
 """
 
 import json
 import os
 import time
-from typing import Dict, List
+from collections import Counter
+from typing import Dict, List, Set, Tuple
 
 import boto3
 from botocore.exceptions import ClientError
@@ -17,6 +18,8 @@ from services.etl.rule_extract import extract_for_note, median_ms, quantile_ms, 
 RAW_BUCKET = os.getenv("RAW_BUCKET")
 ENRICHED_BUCKET = os.getenv("ENRICHED_BUCKET")
 RUN_ID = os.getenv("RUN_ID", "cloud-latest")
+GOLD_S3_KEY = "gold/gold_LOCAL.jsonl"
+TYPES = ("PROBLEM", "MEDICATION")
 
 s3 = boto3.client("s3")
 
@@ -60,6 +63,101 @@ def write_s3_lines(bucket: str, key: str, rows: List[Dict]):
         raise
 
 
+def load_gold_from_s3(bucket: str, key: str) -> List[Dict]:
+    """Load gold standard entities from S3."""
+    try:
+        resp = s3.get_object(Bucket=bucket, Key=key)
+        body = resp["Body"].read().decode("utf-8")
+        rows = []
+        for line in body.split("\n"):
+            line = line.strip()
+            if line:
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        return rows
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            print(f"Gold data not found at s3://{bucket}/{key}")
+            return []
+        print(f"Error loading gold data: {e}")
+        return []
+
+
+def normalize_text(value: str) -> str:
+    return (value or "").strip().lower()
+
+
+def spans_overlap(a: Tuple[int, int], b: Tuple[int, int]) -> bool:
+    return max(0, min(a[1], b[1]) - max(a[0], b[0])) > 0
+
+
+def matchable(g: Dict, p: Dict, relaxed: bool = False) -> bool:
+    if g["note_id"] != p["note_id"]:
+        return False
+    if g["entity_type"] != p["entity_type"]:
+        return False
+    if normalize_text(g.get("norm_text")) != normalize_text(p.get("norm_text")):
+        return False
+    if relaxed:
+        return spans_overlap((g["begin"], g["end"]), (p["begin"], p["end"]))
+    return (g["begin"], g["end"]) == (p["begin"], p["end"])
+
+
+def greedy_match(golds: List[Dict], preds: List[Dict], relaxed: bool = False) -> Tuple[Set[int], Set[int]]:
+    """Greedy 1:1 matching scoped by note + entity_type."""
+    from collections import defaultdict
+
+    used_pred: Set[int] = set()
+    used_gold: Set[int] = set()
+    buckets = defaultdict(lambda: {"g": [], "p": []})
+
+    for gi, gold in enumerate(golds):
+        buckets[(gold["note_id"], gold["entity_type"])]["g"].append((gi, gold))
+    for pi, pred in enumerate(preds):
+        buckets[(pred["note_id"], pred["entity_type"])]["p"].append((pi, pred))
+
+    for (_, _), group in buckets.items():
+        for gi, g in group["g"]:
+            for pi, p in group["p"]:
+                if pi in used_pred:
+                    continue
+                if matchable(g, p, relaxed=relaxed):
+                    used_pred.add(pi)
+                    used_gold.add(gi)
+                    break
+    return used_gold, used_pred
+
+
+def prf1(tp: int, fp: int, fn: int) -> Tuple[float, float, float]:
+    prec = tp / (tp + fp) if (tp + fp) else 0.0
+    rec = tp / (tp + fn) if (tp + fn) else 0.0
+    f1 = 2 * prec * rec / (prec + rec) if (prec + rec) else 0.0
+    return prec, rec, f1
+
+
+def evaluate(golds: List[Dict], preds: List[Dict], relaxed: bool = False) -> Dict[str, float]:
+    """Evaluate predictions against gold standard."""
+    micro = Counter(tp=0, fp=0, fn=0)
+
+    for entity_type in TYPES:
+        g_typ = [g for g in golds if g["entity_type"] == entity_type]
+        p_typ = [p for p in preds if p["entity_type"] == entity_type]
+        used_g, used_p = greedy_match(g_typ, p_typ, relaxed=relaxed)
+        tp = len(used_g)
+        fp = len(p_typ) - tp
+        fn = len(g_typ) - tp
+        micro.update(tp=tp, fp=fp, fn=fn)
+
+    microP, microR, microF1 = prf1(micro["tp"], micro["fp"], micro["fn"])
+    return {"microP": microP, "microR": microR, "microF1": microF1}
+
+
+def filter_by_notes(rows: List[Dict], allowed: Set[str]) -> List[Dict]:
+    return [row for row in rows if row.get("note_id") in allowed]
+
+
 def main():
     if not RAW_BUCKET or not ENRICHED_BUCKET:
         raise ValueError("RAW_BUCKET and ENRICHED_BUCKET env vars must be set")
@@ -100,6 +198,42 @@ def main():
     p50 = median_ms(durations)
     p95 = quantile_ms(durations, 0.95)
 
+    # Load gold data and calculate F1 scores
+    print(f"Loading gold data from s3://{ENRICHED_BUCKET}/{GOLD_S3_KEY}")
+    golds = load_gold_from_s3(ENRICHED_BUCKET, GOLD_S3_KEY)
+
+    f1_exact = 0.0
+    f1_relaxed = 0.0
+    f1_exact_inter = 0.0
+    f1_relaxed_inter = 0.0
+
+    if golds:
+        print(f"Found {len(golds)} gold entities, calculating F1 scores...")
+
+        # Calculate strict F1 scores
+        strict_exact = evaluate(golds, all_entities, relaxed=False)
+        strict_relaxed = evaluate(golds, all_entities, relaxed=True)
+
+        # Calculate intersection F1 scores (only notes with gold labels)
+        gold_note_ids = {g.get("note_id") for g in golds if g.get("note_id")}
+        pred_note_ids = {p.get("note_id") for p in all_entities if p.get("note_id")}
+        inter_ids = pred_note_ids & gold_note_ids
+        inter_golds = filter_by_notes(golds, inter_ids)
+        inter_preds = filter_by_notes(all_entities, inter_ids)
+
+        inter_exact = evaluate(inter_golds, inter_preds, relaxed=False)
+        inter_relaxed = evaluate(inter_golds, inter_preds, relaxed=True)
+
+        f1_exact = strict_exact["microF1"]
+        f1_relaxed = strict_relaxed["microF1"]
+        f1_exact_inter = inter_exact["microF1"]
+        f1_relaxed_inter = inter_relaxed["microF1"]
+
+        print(f"F1 (exact): {f1_exact:.3f}, F1 (relaxed): {f1_relaxed:.3f}")
+        print(f"F1 Intersection (exact): {f1_exact_inter:.3f}, (relaxed): {f1_relaxed_inter:.3f}")
+    else:
+        print("No gold data found, F1 scores will be 0.0")
+
     stats = {
         "run_id": RUN_ID,
         "ts": utc_iso(),
@@ -107,9 +241,10 @@ def main():
         "entity_count": len(all_entities),
         "p50_ms": p50,
         "p95_ms": p95,
-        # Placeholder for F1 evaluation (requires Gold set in S3)
-        "f1_exact_micro": 0.0,
-        "f1_relaxed_micro": 0.0,
+        "f1_exact_micro": f1_exact,
+        "f1_relaxed_micro": f1_relaxed,
+        "f1_exact_micro_intersection": f1_exact_inter,
+        "f1_relaxed_micro_intersection": f1_relaxed_inter,
         "status": "success",
     }
 
@@ -130,7 +265,8 @@ def main():
         Body=json.dumps(stats, indent=2).encode("utf-8"),
     )
 
-    print("Cloud ETL Complete.")
+    print("Cloud ETL Complete ✅")
+    print(json.dumps(stats, indent=2))
 
 
 if __name__ == "__main__":
