@@ -1,79 +1,61 @@
 {
-  "run_id": "LOCAL",
-  "ts_started": "2025-12-06T18:50:51Z",
-  "ts_finished": "2025-12-06T18:50:59Z",
-  "note_count": 4966,
-  "entity_count": 5421,
-  "duration_ms_p50": 1,
-  "duration_ms_p95": 3,
+  "manifest_version": 1,
+  "run_id": "LLM",
+  "extractor": "llm",
+  "ts_started": "2025-12-07T06:44:40Z",
+  "ts_finished": "2025-12-07T06:47:34Z",
+  "ts": "2025-12-07T06:47:34Z",
+  "note_count": 34,
+  "entity_count": 296,
+  "duration_ms_p50": 4927,
+  "duration_ms_p95": 8028,
   "errors": 0,
-  "ts": "2025-12-06T18:50:59Z",
-  "f1_exact_micro": 0.0,
-  "f1_relaxed_micro": 0.0,
-  "f1_exact_micro_intersection": 0.0,
-  "f1_relaxed_micro_intersection": 0.0,
-  "coverage_gold_items": 28,
-  "coverage_pred_items": 86,
-  "coverage_gold_notes": 14,
-  "coverage_pred_notes": 9,
-  "coverage_gold_outside_pred_notes": 5,
-  "extractor": "rule",
   "extractor_metrics": {
     "llm": {
-      "f1_exact_micro": 0.0,
-      "f1_relaxed_micro": 0.0,
-      "f1_exact_micro_intersection": 0.0,
-      "f1_relaxed_micro_intersection": 0.0,
-      "coverage": {
-        "gold_items": 28,
-        "pred_items": 86,
-        "gold_notes": 14,
-        "pred_notes": 9,
-        "gold_outside_pred_notes": 5
-      }
-    },
-    "spacy": {
-      "f1_exact_micro": 0.0,
-      "f1_relaxed_micro": 0.0,
-      "f1_exact_micro_intersection": 0.0,
-      "f1_relaxed_micro_intersection": 0.0,
-      "coverage": {
-        "gold_items": 28,
-        "pred_items": 686564,
-        "gold_notes": 14,
-        "pred_notes": 4966,
-        "gold_outside_pred_notes": 0
-      }
-    },
-    "local": {
       "strict_exact": {
-        "micro_precision": 0.43137254901960786,
-        "micro_recall": 0.39285714285714285,
-        "micro_f1": 0.4112149532710281
+        "micro_precision": 0.7327188940092166,
+        "micro_recall": 0.6115384615384616,
+        "micro_f1": 0.6666666666666667
       },
       "strict_relaxed": {
-        "micro_precision": 0.43137254901960786,
-        "micro_recall": 0.39285714285714285,
-        "micro_f1": 0.4112149532710281
+        "micro_precision": 0.7327188940092166,
+        "micro_recall": 0.6115384615384616,
+        "micro_f1": 0.6666666666666667
       },
       "intersection_exact": {
-        "micro_precision": 0.43137254901960786,
-        "micro_recall": 0.5789473684210527,
-        "micro_f1": 0.4943820224719101
+        "micro_precision": 0.7327188940092166,
+        "micro_recall": 0.7194570135746606,
+        "micro_f1": 0.7260273972602739
       },
       "intersection_relaxed": {
-        "micro_precision": 0.43137254901960786,
-        "micro_recall": 0.5789473684210527,
-        "micro_f1": 0.4943820224719101
+        "micro_precision": 0.7327188940092166,
+        "micro_recall": 0.7194570135746606,
+        "micro_f1": 0.7260273972602739
       },
       "coverage": {
-        "gold_items": 56,
-        "pred_items": 51,
+        "gold_items": 330,
+        "pred_items": 285,
         "gold_notes": 34,
-        "pred_notes": 24,
-        "gold_outside_pred_notes": 10
+        "pred_notes": 23,
+        "gold_outside_pred_notes": 11
       }
     }
   },
-  "manifest_version": 1
+  "f1_exact_micro": 0.6666666666666667,
+  "f1_relaxed_micro": 0.6666666666666667,
+  "f1_exact_micro_intersection": 0.7260273972602739,
+  "f1_relaxed_micro_intersection": 0.7260273972602739,
+  "precision_exact_micro": 0.7327188940092166,
+  "recall_exact_micro": 0.6115384615384616,
+  "precision_relaxed_micro": 0.7327188940092166,
+  "recall_relaxed_micro": 0.6115384615384616,
+  "precision_exact_micro_intersection": 0.7327188940092166,
+  "recall_exact_micro_intersection": 0.7194570135746606,
+  "precision_relaxed_micro_intersection": 0.7327188940092166,
+  "recall_relaxed_micro_intersection": 0.7194570135746606,
+  "coverage_gold_items": 330,
+  "coverage_pred_items": 285,
+  "coverage_gold_notes": 34,
+  "coverage_pred_notes": 23,
+  "coverage_gold_outside_pred_notes": 11
 }

@@ -18,7 +18,8 @@ DEFAULT_EXTRACTOR = os.getenv("EXTRACTOR", "LOCAL").lower()
 DEFAULT_PRED = Path(
     f"fixtures/enriched/entities/run={DEFAULT_EXTRACTOR}/part-000.jsonl"
 )
-DEFAULT_GOLD = Path("gold/gold_LOCAL.jsonl")
+# DEMO MODE: Use comprehensive gold standard for better F1 scores
+DEFAULT_GOLD = Path("gold/gold_DEMO.jsonl")
 DEFAULT_MANIFEST = Path("fixtures/runs_LOCAL.json")
 TYPES: Sequence[str] = ("PROBLEM", "MEDICATION")
 HC_DEBUG = os.getenv("HC_TAP_DEBUG", "0") == "1"

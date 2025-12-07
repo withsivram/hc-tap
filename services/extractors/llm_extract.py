@@ -35,6 +35,7 @@ class LLMExtractor:
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
                 raise RuntimeError("ANTHROPIC_API_KEY not set in .env")
+            # Anthropic 0.34.2 uses api_key parameter only
             self.client = anthropic.Anthropic(api_key=api_key)
             self.model = "claude-3-haiku-20240307"  # Fast & cheap
 
@@ -42,17 +43,54 @@ class LLMExtractor:
             raise ValueError(f"Unknown EXTRACTOR_LLM provider: {self.provider}")
 
     def extract(self, text: str, note_id: str, run_id: str) -> List[dict]:
-        prompt = f"""
-        You are a medical entity extractor. Extract all PROBLEMS (diseases, symptoms, diagnoses) and MEDICATIONS (drugs, treatments) from the text below.
-        
-        Return ONLY a valid JSON list of objects with these fields:
-        - text: exact span text
-        - norm_text: normalized text (lowercase, no dose)
-        - entity_type: "PROBLEM" or "MEDICATION"
-        
-        Text:
-        {text}
-        """
+        prompt = f"""You are a clinical NER system. Extract medical entities with EXACT text spans from clinical notes.
+
+ENTITY TYPES:
+- PROBLEM: diseases, symptoms, diagnoses, conditions (e.g., "hypertension", "chest pain", "diabetes")
+- MEDICATION: drugs, treatments, prescriptions (e.g., "lisinopril 10mg", "aspirin", "metformin")
+- TEST: lab tests, procedures, diagnostics (e.g., "CBC", "chest x-ray", "blood pressure")
+
+RULES:
+1. Extract the EXACT text span as it appears (preserve case, spacing, punctuation)
+2. Include dosages with medications (e.g., "aspirin 81mg" not just "aspirin")
+3. Include qualifiers with problems (e.g., "severe hypertension" not just "hypertension")
+4. Do NOT include generic terms like "medication" or "treatment" - be specific
+5. For norm_text: remove dosages, lowercase, basic normalization
+
+EXAMPLES:
+
+Example 1:
+Text: "Patient presents with chest pain. Started aspirin 81mg daily."
+Output:
+[
+  {{"text": "chest pain", "norm_text": "chest pain", "entity_type": "PROBLEM"}},
+  {{"text": "aspirin 81mg", "norm_text": "aspirin", "entity_type": "MEDICATION"}}
+]
+
+Example 2:
+Text: "Assessment: Allergic rhinitis. Plan: She will try Zyrtec. Samples of Nasonex two sprays given."
+Output:
+[
+  {{"text": "Allergic rhinitis", "norm_text": "allergic rhinitis", "entity_type": "PROBLEM"}},
+  {{"text": "Zyrtec", "norm_text": "zyrtec", "entity_type": "MEDICATION"}},
+  {{"text": "Nasonex", "norm_text": "nasonex", "entity_type": "MEDICATION"}}
+]
+
+Example 3:
+Text: "Labs: CBC normal, chest x-ray shows infiltrate. Diagnosis: pneumonia."
+Output:
+[
+  {{"text": "CBC", "norm_text": "cbc", "entity_type": "TEST"}},
+  {{"text": "chest x-ray", "norm_text": "chest xray", "entity_type": "TEST"}},
+  {{"text": "infiltrate", "norm_text": "infiltrate", "entity_type": "PROBLEM"}},
+  {{"text": "pneumonia", "norm_text": "pneumonia", "entity_type": "PROBLEM"}}
+]
+
+Now extract from this clinical note:
+
+{text}
+
+Return ONLY a JSON array of entities, no explanation."""
 
         retries = 3
         for i in range(retries):

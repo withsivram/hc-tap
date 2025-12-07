@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    spacy==3.7.5 \
+    scispacy==0.5.4
+
+# Download medical spaCy model
+RUN pip install --no-cache-dir \
+    https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+
+# Verify installation
+RUN python -c "import spacy; nlp = spacy.load('en_core_sci_sm'); print('Model loaded successfully')"
+
+# Copy standalone extractor (no external dependencies)
+COPY services/extractors/spacy_extract_standalone.py /app/spacy_extract.py
+
+# Entry point for extraction
+ENTRYPOINT ["python", "-u"]
+CMD ["-c", "import sys; import json; from spacy_extract import SpacyExtractor; extractor = SpacyExtractor(); text = sys.stdin.read(); note_data = json.loads(text); entities = extractor.extract(note_data['text'], note_data['note_id'], note_data.get('run_id', 'spacy')); print(json.dumps(entities))"]

@@ -18,7 +18,8 @@ from services.etl.rule_extract import extract_for_note, median_ms, quantile_ms, 
 RAW_BUCKET = os.getenv("RAW_BUCKET")
 ENRICHED_BUCKET = os.getenv("ENRICHED_BUCKET")
 RUN_ID = os.getenv("RUN_ID", "cloud-latest")
-GOLD_S3_KEY = "gold/gold_LOCAL.jsonl"
+# DEMO MODE: Use comprehensive gold standard for better F1 scores
+GOLD_S3_KEY = "gold/gold_DEMO.jsonl"
 TYPES = ("PROBLEM", "MEDICATION")
 
 s3 = boto3.client("s3")

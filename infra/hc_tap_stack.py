@@ -113,7 +113,7 @@ class HcTapStack(Stack):
         # 7. ETL Task Definition (Fargate)
         # This is not a Service (doesn't run continuously), but a Task Definition
         # that we can run on-demand via GitHub Actions or AWS CLI.
-
+        
         # Create CloudWatch Log Group for ETL
         self.etl_log_group = logs.LogGroup(
             self,
@@ -122,7 +122,7 @@ class HcTapStack(Stack):
             retention=logs.RetentionDays.TWO_WEEKS,
             removal_policy=RemovalPolicy.DESTROY,
         )
-
+        
         self.etl_task_def = ecs.FargateTaskDefinition(
             self,
             "EtlTaskDef",

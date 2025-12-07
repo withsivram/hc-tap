@@ -95,8 +95,8 @@ def badge(value):
     )
 
 
-st.set_page_config(page_title="HC-TAP Dashboard", layout="wide")
-st.title("Healthcare Text Analytics — Phase-3 KPIs")
+st.set_page_config(page_title="Healthcare Text Analytics", layout="wide")
+st.title("Healthcare Text Analytics")
 
 if not API_BASE and not os.getenv("API_URL"):
     st.warning("Cloud API URL not set, using default local URL")
