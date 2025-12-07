@@ -112,9 +112,20 @@ if not manifest:
     )
     manifest = {}  # Provide empty dict to prevent AttributeError
 
-metrics_map = manifest.get("extractor_metrics", {})
-current_extractor = manifest.get("extractor", "local")
-extractors = sorted(metrics_map.keys()) or [current_extractor]
+# Cloud manifests use "run_id", local manifests use "extractor"
+# Check if this is a cloud manifest (has run_id, no extractor_metrics)
+is_cloud_manifest = "run_id" in manifest and "extractor_metrics" not in manifest
+
+if is_cloud_manifest:
+    # Cloud mode: use run_id directly
+    current_extractor = manifest.get("run_id", "cloud-latest")
+    extractors = [current_extractor]
+    metrics_map = {current_extractor: manifest}
+else:
+    # Local mode: use extractor_metrics structure
+    metrics_map = manifest.get("extractor_metrics", {})
+    current_extractor = manifest.get("extractor", "local")
+    extractors = sorted(metrics_map.keys()) or [current_extractor]
 
 selected_extractor = st.selectbox(
     "Select Run",
