@@ -42,8 +42,10 @@ def load_entities(path: str, run_id: str = None):
     rows = []
 
     # Try S3 if cloud mode
-    is_cloud = (API_URL and "localhost" not in API_URL) or os.getenv("HC_TAP_ENV") == "cloud"
-    
+    is_cloud = (API_URL and "localhost" not in API_URL) or os.getenv(
+        "HC_TAP_ENV"
+    ) == "cloud"
+
     if is_cloud and run_id:
         try:
             import boto3
@@ -125,11 +127,15 @@ elif "extractor_metrics" in manifest and manifest.get("extractor_metrics"):
     metrics_map = manifest.get("extractor_metrics", {})
     current_extractor = manifest.get("extractor", "local")
     extractors = sorted(metrics_map.keys()) or [current_extractor]
-    
+
     selected_extractor = st.selectbox(
         "Select Run",
         extractors,
-        index=extractors.index(current_extractor) if current_extractor in extractors else 0,
+        index=(
+            extractors.index(current_extractor)
+            if current_extractor in extractors
+            else 0
+        ),
     )
     metrics = metrics_map.get(selected_extractor, {})
     is_cloud_manifest = False
@@ -141,16 +147,19 @@ else:
     is_cloud_manifest = True
 
 # If no extractor selector was shown (flat F1 or cloud mode), set selected_extractor
-if 'selected_extractor' not in locals():
+if "selected_extractor" not in locals():
     selected_extractor = current_extractor
+
+# Use run_id from manifest for S3 loading (e.g., "cloud-local"), fall back to selected_extractor
+cloud_run_id = manifest.get("run_id", selected_extractor)
 
 enriched_path = Path(
     f"fixtures/enriched/entities/run={selected_extractor}/part-000.jsonl"
 )
-entities_df = load_entities(str(enriched_path), run_id=selected_extractor)
+entities_df = load_entities(str(enriched_path), run_id=cloud_run_id)
 
 st.caption(
-    f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Enriched: {enriched_path}"
+    f"Manifest Source: {manifest.get('run_id', 'Local/File')} | Entities: {cloud_run_id}"
 )
 
 tab_kpi, tab_demo = st.tabs(["KPIs", "Live Demo"])
@@ -169,7 +178,7 @@ with tab_kpi:
         as_metric(precision),
     )
     row2[1].metric(
-        "Recall", 
+        "Recall",
         as_metric(recall),
     )
 
